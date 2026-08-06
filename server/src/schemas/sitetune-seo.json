@@ -1,0 +1,49 @@
+{
+  "category": "sitetune",
+  "displayName": "SEO",
+  "icon": "search",
+  "attributes": {
+    "metaTitle": {
+      "type": "string",
+      "maxLength": 60,
+      "pluginOptions": { "i18n": { "localized": true } }
+    },
+    "metaDescription": {
+      "type": "text",
+      "maxLength": 160,
+      "pluginOptions": { "i18n": { "localized": true } }
+    },
+    "metaImage": {
+      "type": "media",
+      "multiple": false,
+      "allowedTypes": ["images"],
+      "pluginOptions": { "i18n": { "localized": true } }
+    },
+    "noindex": {
+      "type": "boolean",
+      "default": false
+    },
+    "nofollow": {
+      "type": "boolean",
+      "default": false
+    },
+    "canonicalURL": {
+      "type": "string",
+      "pluginOptions": { "i18n": { "localized": true } }
+    },
+    "keywords": {
+      "type": "text",
+      "pluginOptions": { "i18n": { "localized": true } }
+    },
+    "structuredData": {
+      "type": "json",
+      "pluginOptions": { "i18n": { "localized": true } }
+    },
+    "openGraph": {
+      "type": "component",
+      "component": "sitetune.open-graph",
+      "repeatable": false,
+      "pluginOptions": { "i18n": { "localized": true } }
+    }
+  }
+}
