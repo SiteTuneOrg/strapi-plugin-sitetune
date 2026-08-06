@@ -1,3 +1,5 @@
+import redirectRoute from "./redirect";
+
 export default () => ({
   type: "content-api",
   routes: [
@@ -10,5 +12,6 @@ export default () => ({
         policies: [],
       },
     },
+    redirectRoute,
   ],
 });

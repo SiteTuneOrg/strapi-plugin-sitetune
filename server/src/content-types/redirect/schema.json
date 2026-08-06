@@ -1,0 +1,39 @@
+{
+  "kind": "collectionType",
+  "collectionName": "sitetune_redirects",
+  "info": {
+    "singularName": "redirect",
+    "pluralName": "redirects",
+    "displayName": "Redirect",
+    "description": "A 301/302 redirect rule for an adopting site's frontend to enforce."
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "from": {
+      "type": "string",
+      "required": true,
+      "unique": true
+    },
+    "to": {
+      "type": "string",
+      "required": true
+    },
+    "statusCode": {
+      "type": "enumeration",
+      "enum": ["301", "302"],
+      "default": "301"
+    },
+    "enabled": {
+      "type": "boolean",
+      "default": true
+    },
+    "hitCount": {
+      "type": "integer",
+      "min": 0,
+      "default": 0
+    }
+  }
+}

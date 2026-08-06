@@ -32,6 +32,7 @@
   "dependencies": {},
   "devDependencies": {
     "@strapi/strapi": "^5.51.2",
+    "@strapi/utils": "^5.51.2",
     "@strapi/sdk-plugin": "^6.1.1",
     "prettier": "^3.9.6",
     "vitest": "^3.2.4",
@@ -49,6 +50,7 @@
   },
   "peerDependencies": {
     "@strapi/strapi": "^5.51.2",
+    "@strapi/utils": "^5.51.2",
     "@strapi/sdk-plugin": "^6.1.1",
     "@strapi/design-system": "^2.2.3",
     "@strapi/icons": "^2.2.3",
