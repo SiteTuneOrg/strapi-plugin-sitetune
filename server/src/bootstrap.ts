@@ -1,26 +1,39 @@
 import type { Core } from "@strapi/strapi";
 
 /**
- * Pilar A boots in two phases (see README): first boot creates the
- * sitetune.seo/open-graph components and the sitetuneSeo field via the
- * Content-Type Builder, which triggers a Strapi restart in development
- * (file-watcher driven) to load the new schema. The backfill migration only
- * runs once the schema is confirmed present, i.e. on the boot after that.
+ * Pilar A's schema is created incrementally across one or more boots (see
+ * README's "Pillar A design notes"). Each boot makes at most one
+ * schema-changing Content-Type Builder call, then explicitly triggers
+ * `strapi.reload()` — mirroring what the CTB's own admin HTTP controller
+ * does after a write (see `content-type-builder`'s
+ * `controllers/{components,content-types}.js`).
  *
- * The Content-Type Builder's auto-restart relies on the dev file watcher —
- * it does not happen in a production boot (no watcher there). Run this
- * against a development host first so the generated schema files land in
- * the host repo and get committed; don't rely on this running unattended
- * against production on every deploy.
+ * This is required, not optional: `strapi.components` /
+ * `strapi.contentTypes` only refresh on that reload, not automatically
+ * within the same process. A second schema-changing call in the same boot,
+ * referencing something the first call just created, throws
+ * `ApplicationError: component.notFound` against the still-stale live
+ * registry — confirmed against a real boot. The backfill migration only
+ * runs once `schema-setup.isReady()` is true, i.e. no schema change was
+ * needed this boot.
+ *
+ * `strapi.reload()` sends an IPC message to the `strapi develop` parent
+ * process (see `@strapi/core`'s `services/reloader.js`) — it only works in
+ * development, with `autoReload` on. There's no equivalent in a production
+ * boot (no watcher/parent process to catch the signal), so don't rely on
+ * this running unattended against production; run it against a development
+ * host first so the generated schema files land in the host repo and get
+ * committed.
  */
 const bootstrap = async ({ strapi }: { strapi: Core.Strapi }) => {
   const schemaSetup = strapi.plugin("sitetune").service("schema-setup");
-  const { schemaChanged } = await schemaSetup.run();
+  const { needsReload } = await schemaSetup.run();
 
-  if (schemaChanged) {
+  if (needsReload) {
     strapi.log.info(
-      "[sitetune] SEO/Open Graph schema created or updated on the host — restart to load it. The SEO backfill migration runs on the next boot."
+      "[sitetune] SEO/Open Graph schema changed on the host — reloading to load it before the SEO backfill migration runs."
     );
+    setImmediate(() => strapi.reload());
     return;
   }
 

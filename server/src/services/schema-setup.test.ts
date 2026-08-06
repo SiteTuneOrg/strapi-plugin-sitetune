@@ -67,25 +67,29 @@ describe("schema-setup", () => {
 
     const result = await schemaSetup({ strapi: strapi as any }).run();
 
-    expect(result.schemaChanged).toBe(false);
+    expect(result).toEqual({ schemaChanged: false, needsReload: false });
     expect(createComponent).not.toHaveBeenCalled();
     expect(editContentType).not.toHaveBeenCalled();
   });
 
-  it("creates open-graph and seo together in a single batched call when both are missing", async () => {
-    // Two separate createComponent() calls in the same boot would fail:
-    // strapi.components only refreshes on a full reload, so a second call
-    // referencing what the first call just created (by its final UID)
-    // throws component.notFound against the still-stale live registry.
+  it("creates open-graph and seo together in a single batched call when both are missing, and does not attempt the field edit in the same run", async () => {
+    // Two separate schema-changing CTB calls in the same boot would fail:
+    // strapi.components/contentTypes only refresh on strapi.reload(), which
+    // the caller (bootstrap.ts) triggers and then stops — nothing else may
+    // run in this same process afterwards. A second call referencing what
+    // the first call just created (by its final UID) throws
+    // component.notFound against the still-stale live registry.
     // Regression test for that — see createDependentComponents in
-    // schema-setup.ts.
-    const { strapi, createComponent } = buildStrapiMock({
+    // schema-setup.ts, and the needsReload contract below.
+    const { strapi, createComponent, editContentType } = buildStrapiMock({
       components: {},
       contentTypes: { [ARTICLE_UID]: articleModel() },
     });
 
-    await schemaSetup({ strapi: strapi as any }).run();
+    const result = await schemaSetup({ strapi: strapi as any }).run();
 
+    expect(result).toEqual({ schemaChanged: true, needsReload: true });
+    expect(editContentType).not.toHaveBeenCalled();
     expect(createComponent).toHaveBeenCalledTimes(1);
     const [payload] = createComponent.mock.calls[0];
     expect(payload.component.displayName).toBe("SEO");
@@ -143,8 +147,9 @@ describe("schema-setup", () => {
       contentTypes: { [ARTICLE_UID]: articleModel() },
     });
 
-    await schemaSetup({ strapi: strapi as any }).run();
+    const result = await schemaSetup({ strapi: strapi as any }).run();
 
+    expect(result).toEqual({ schemaChanged: true, needsReload: true });
     expect(editContentType).toHaveBeenCalledTimes(1);
     const [uid, payload] = editContentType.mock.calls[0];
     expect(uid).toBe(ARTICLE_UID);
@@ -171,7 +176,7 @@ describe("schema-setup", () => {
 
     const result = await schemaSetup({ strapi: strapi as any }).run();
 
-    expect(result.schemaChanged).toBe(false);
+    expect(result).toEqual({ schemaChanged: false, needsReload: false });
     expect(editContentType).not.toHaveBeenCalled();
     expect((strapi.log.warn as any)).toHaveBeenCalled();
   });

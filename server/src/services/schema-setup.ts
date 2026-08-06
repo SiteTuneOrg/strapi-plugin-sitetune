@@ -157,22 +157,41 @@ async function ensureSeoField(
 
 /**
  * Idempotent: only creates components/fields that don't already exist on the
- * host. Writing a new component/field via the Content-Type Builder service
- * triggers a Strapi restart, so this runs across two boots — see README.
+ * host.
+ *
+ * Only the Content-Type Builder's admin HTTP controller calls
+ * `strapi.reload()` after a write — the service itself doesn't, and
+ * `strapi.components`/`strapi.contentTypes` only refresh on that reload
+ * (confirmed against a real boot: a second CTB write in the same process,
+ * referencing something the first write just created, throws
+ * `component.notFound` against the still-stale live registry). So this
+ * makes at most one schema-changing call per `run()` and reports
+ * `needsReload: true` whenever it did — the caller (`bootstrap.ts`) must
+ * trigger the reload itself and skip the migration for that boot.
  */
 const schemaSetup = ({ strapi }: { strapi: Core.Strapi }) => ({
-  async run(): Promise<{ schemaChanged: boolean }> {
-    let schemaChanged = await ensureComponents(
+  async run(): Promise<{ schemaChanged: boolean; needsReload: boolean }> {
+    const componentsChanged = await ensureComponents(
       strapi,
       openGraphSchema as ComponentSchemaSource,
       seoSchema as ComponentSchemaSource
     );
 
-    for (const { uid } of TARGET_CONTENT_TYPES) {
-      schemaChanged = (await ensureSeoField(strapi, uid)) || schemaChanged;
+    if (componentsChanged) {
+      return { schemaChanged: true, needsReload: true };
     }
 
-    return { schemaChanged };
+    // Safe to loop over multiple content-types here (unlike component
+    // creation): each editContentType() call only adds a field referencing
+    // sitetune.seo, which — at this point — is already confirmed present in
+    // the live registry from a prior boot, not something just created in
+    // this same call.
+    let fieldsChanged = false;
+    for (const { uid } of TARGET_CONTENT_TYPES) {
+      fieldsChanged = (await ensureSeoField(strapi, uid)) || fieldsChanged;
+    }
+
+    return { schemaChanged: fieldsChanged, needsReload: fieldsChanged };
   },
 
   isReady(): boolean {
