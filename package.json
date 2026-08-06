@@ -33,7 +33,24 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "release": "yarn build && changeset publish",
+    "prepublishOnly": "strapi-plugin verify"
+  },
+  "engines": {
+    "node": ">=20 <=26"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SiteTuneOrg/strapi-plugin-sitetune.git"
+  },
+  "bugs": {
+    "url": "https://github.com/SiteTuneOrg/strapi-plugin-sitetune/issues"
+  },
+  "homepage": "https://github.com/SiteTuneOrg/strapi-plugin-sitetune#readme",
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
   },
   "dependencies": {},
   "devDependencies": {
