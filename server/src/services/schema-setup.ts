@@ -2,12 +2,7 @@ import type { Core } from "@strapi/strapi";
 
 import openGraphSchema from "../schemas/sitetune-open-graph.json";
 import seoSchema from "../schemas/sitetune-seo.json";
-import {
-  OPEN_GRAPH_UID,
-  SEO_UID,
-  SEO_FIELD_NAME,
-  TARGET_CONTENT_TYPES,
-} from "../constants";
+import { OPEN_GRAPH_UID, SEO_UID } from "../constants";
 
 interface ComponentSchemaSource {
   category: string;
@@ -111,106 +106,30 @@ async function ensureComponents(
   return true;
 }
 
-async function ensureSeoField(
-  strapi: Core.Strapi,
-  contentTypeUid: string
-): Promise<boolean> {
-  const model = strapi.contentTypes[contentTypeUid];
-
-  if (!model) {
-    strapi.log.warn(
-      `[sitetune] content-type "${contentTypeUid}" not found, skipping SEO field setup`
-    );
-    return false;
-  }
-
-  if (model.attributes[SEO_FIELD_NAME]) {
-    return false;
-  }
-
-  const contentTypesService = getContentTypeBuilder(strapi).service(
-    "content-types"
-  );
-
-  // Round-tripping strapi.contentTypes[uid].attributes as-is into
-  // editContentType() corrupts relations: the live-loaded shape carries
-  // `inversedBy`/`mappedBy`, but editContentType's diff compares against
-  // `targetAttribute` (a differently-named field). Every relation reads as
-  // "changed" and gets torn down (its inverse side unset) without being
-  // re-created — confirmed against a real boot, where this silently
-  // dropped `author.articles`, only surfacing as an unrelated-looking
-  // "inversedBy attribute ... not found" error on the *next* boot.
-  // `formatContentType()` is the same function Strapi uses to shape a
-  // content-type for the admin UI's own edit form, including that
-  // inversedBy/mappedBy -> targetAttribute conversion — reusing it here
-  // keeps this in sync with whatever CTB's edit contract expects, rather
-  // than re-deriving it by hand.
-  const formatted = contentTypesService.formatContentType(model).schema;
-
-  await contentTypesService.editContentType(contentTypeUid, {
-    contentType: {
-      ...formatted,
-      attributes: {
-        ...formatted.attributes,
-        [SEO_FIELD_NAME]: {
-          type: "component",
-          component: SEO_UID,
-          repeatable: false,
-          pluginOptions: { i18n: { localized: true } },
-        },
-      },
-    },
-  });
-
-  return true;
-}
-
 /**
- * Idempotent: only creates components/fields that don't already exist on the
- * host.
- *
- * Only the Content-Type Builder's admin HTTP controller calls
- * `strapi.reload()` after a write — the service itself doesn't, and
- * `strapi.components`/`strapi.contentTypes` only refresh on that reload
- * (confirmed against a real boot: a second CTB write in the same process,
- * referencing something the first write just created, throws
- * `component.notFound` against the still-stale live registry). So this
- * makes at most one schema-changing call per `run()` and reports
- * `needsReload: true` whenever it did — the caller (`bootstrap.ts`) must
- * trigger the reload itself and skip the migration for that boot.
+ * Idempotent: only creates the sitetune.seo / sitetune.open-graph
+ * components if they don't already exist on the host. Deliberately does
+ * NOT touch any existing content-type (article, global, or otherwise) —
+ * attaching sitetune.seo to a content-type is a manual step via the admin
+ * panel's Content-Type Builder, left to whoever adopts the plugin. See
+ * README's "Pillar A design notes" for why: editing an existing
+ * content-type's attributes programmatically (to add a field referencing
+ * these components) risks corrupting unrelated relations on that
+ * content-type, confirmed against a real host.
  */
 const schemaSetup = ({ strapi }: { strapi: Core.Strapi }) => ({
-  async run(): Promise<{ schemaChanged: boolean; needsReload: boolean }> {
-    const componentsChanged = await ensureComponents(
+  async run(): Promise<{ schemaChanged: boolean }> {
+    const schemaChanged = await ensureComponents(
       strapi,
       openGraphSchema as ComponentSchemaSource,
       seoSchema as ComponentSchemaSource
     );
 
-    if (componentsChanged) {
-      return { schemaChanged: true, needsReload: true };
-    }
-
-    // Safe to loop over multiple content-types here (unlike component
-    // creation): each editContentType() call only adds a field referencing
-    // sitetune.seo, which — at this point — is already confirmed present in
-    // the live registry from a prior boot, not something just created in
-    // this same call.
-    let fieldsChanged = false;
-    for (const { uid } of TARGET_CONTENT_TYPES) {
-      fieldsChanged = (await ensureSeoField(strapi, uid)) || fieldsChanged;
-    }
-
-    return { schemaChanged: fieldsChanged, needsReload: fieldsChanged };
+    return { schemaChanged };
   },
 
   isReady(): boolean {
-    if (!strapi.components[OPEN_GRAPH_UID] || !strapi.components[SEO_UID]) {
-      return false;
-    }
-    return TARGET_CONTENT_TYPES.every(
-      ({ uid }) => strapi.contentTypes[uid]?.attributes?.[SEO_FIELD_NAME]
-    );
+    return Boolean(strapi.components[OPEN_GRAPH_UID] && strapi.components[SEO_UID]);
   },
 });
 
