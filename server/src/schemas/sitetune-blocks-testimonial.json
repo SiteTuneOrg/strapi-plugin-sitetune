@@ -1,0 +1,35 @@
+{
+  "category": "sitetune-blocks",
+  "displayName": "Testimonial",
+  "icon": "message",
+  "attributes": {
+    "authorName": {
+      "type": "string"
+    },
+    "authorRole": {
+      "type": "string",
+      "pluginOptions": { "i18n": { "localized": true } }
+    },
+    "authorPhoto": {
+      "type": "media",
+      "multiple": false,
+      "allowedTypes": ["images"],
+      "pluginOptions": { "i18n": { "localized": true } }
+    },
+    "quote": {
+      "type": "text",
+      "pluginOptions": { "i18n": { "localized": true } }
+    },
+    "rating": {
+      "type": "integer"
+    },
+    "source": {
+      "type": "enumeration",
+      "enum": ["manual", "google", "facebook", "other"],
+      "default": "manual"
+    },
+    "sourceUrl": {
+      "type": "string"
+    }
+  }
+}

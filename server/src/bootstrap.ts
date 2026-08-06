@@ -1,10 +1,11 @@
 import type { Core } from "@strapi/strapi";
 
 /**
- * Ensures the sitetune.seo / sitetune.open-graph components exist on the
- * host (see schema-setup.ts). Does not touch any existing content-type —
- * attaching sitetune.seo to article/global/etc. is a manual step via the
- * admin panel, left to whoever adopts the plugin.
+ * Ensures the sitetune.seo / sitetune.open-graph / sitetune-blocks.*
+ * components exist on the host (see schema-setup.ts). Does not touch any
+ * existing content-type — attaching any of these to article/global/a page's
+ * dynamic zone/etc. is a manual step via the admin panel, left to whoever
+ * adopts the plugin.
  *
  * Only the Content-Type Builder's admin HTTP controller calls
  * `strapi.reload()` after a write — the service itself doesn't, and
@@ -26,7 +27,7 @@ const bootstrap = async ({ strapi }: { strapi: Core.Strapi }) => {
 
   if (schemaChanged) {
     strapi.log.info(
-      "[sitetune] SEO/Open Graph components created on the host — reloading to load them."
+      "[sitetune] components created on the host — reloading to load them."
     );
     setImmediate(() => strapi.reload());
   }
