@@ -39,11 +39,7 @@ Then, in the host project:
 npx yalc add --link strapi-plugin-sitetune
 ```
 
-And register it in the host's `config/plugins.ts`:
-
-```typescript
-sitetune: { enabled: true, resolve: './node_modules/strapi-plugin-sitetune' },
-```
+No `config/plugins.ts` entry needed — installed this way the plugin is a real `node_modules` dependency, and Strapi auto-discovers any dependency whose `package.json` has `strapi.kind === "plugin"` (confirmed in `packages/core/strapi/src/node/core/plugins.ts`'s `getEnabledPlugins`).
 
 Run `yarn develop` in the host. On first boot the plugin creates its schema and the host restarts; on the next boot the SEO backfill migration runs. Commit the generated `src/components/sitetune/*.json` and updated `src/api/{article,global}/content-types/**/schema.json` files in the host repo once you've confirmed it looks right.
 
