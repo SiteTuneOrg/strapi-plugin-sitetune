@@ -128,29 +128,39 @@ async function ensureSeoField(
     return false;
   }
 
-  await getContentTypeBuilder(strapi)
-    .service("content-types")
-    .editContentType(contentTypeUid, {
-      contentType: {
-        displayName: model.info.displayName,
-        singularName: (model.info as Record<string, unknown>).singularName,
-        pluralName: (model.info as Record<string, unknown>).pluralName,
-        description: model.info.description,
-        kind: model.kind,
-        draftAndPublish: model.options?.draftAndPublish,
-        options: model.options,
-        pluginOptions: model.pluginOptions,
-        attributes: {
-          ...model.attributes,
-          [SEO_FIELD_NAME]: {
-            type: "component",
-            component: SEO_UID,
-            repeatable: false,
-            pluginOptions: { i18n: { localized: true } },
-          },
+  const contentTypesService = getContentTypeBuilder(strapi).service(
+    "content-types"
+  );
+
+  // Round-tripping strapi.contentTypes[uid].attributes as-is into
+  // editContentType() corrupts relations: the live-loaded shape carries
+  // `inversedBy`/`mappedBy`, but editContentType's diff compares against
+  // `targetAttribute` (a differently-named field). Every relation reads as
+  // "changed" and gets torn down (its inverse side unset) without being
+  // re-created — confirmed against a real boot, where this silently
+  // dropped `author.articles`, only surfacing as an unrelated-looking
+  // "inversedBy attribute ... not found" error on the *next* boot.
+  // `formatContentType()` is the same function Strapi uses to shape a
+  // content-type for the admin UI's own edit form, including that
+  // inversedBy/mappedBy -> targetAttribute conversion — reusing it here
+  // keeps this in sync with whatever CTB's edit contract expects, rather
+  // than re-deriving it by hand.
+  const formatted = contentTypesService.formatContentType(model).schema;
+
+  await contentTypesService.editContentType(contentTypeUid, {
+    contentType: {
+      ...formatted,
+      attributes: {
+        ...formatted.attributes,
+        [SEO_FIELD_NAME]: {
+          type: "component",
+          component: SEO_UID,
+          repeatable: false,
+          pluginOptions: { i18n: { localized: true } },
         },
       },
-    });
+    },
+  });
 
   return true;
 }

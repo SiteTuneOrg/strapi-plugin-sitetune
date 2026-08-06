@@ -6,6 +6,44 @@ import { OPEN_GRAPH_UID, SEO_UID, SEO_FIELD_NAME } from "../constants";
 const ARTICLE_UID = "api::article.article";
 const GLOBAL_UID = "api::global.global";
 
+// A faithful-enough stand-in for @strapi/content-type-builder's real
+// formatContentType(): flattens `options` onto the schema root, and — the
+// part this suite specifically guards — converts a relation's
+// inversedBy/mappedBy into targetAttribute, the field editContentType's own
+// diff logic actually compares. Feeding it the raw, unconverted
+// strapi.contentTypes[uid].attributes shape (as an earlier version of this
+// code did) makes every relation look "changed", tearing down its inverse
+// side on the target content-type without recreating it — confirmed
+// against a real boot, where it silently dropped article.author's inverse
+// (author.articles), only surfacing as an unrelated-looking DB error on
+// the *next* boot.
+function formatContentType(model: any) {
+  const attributes = Object.keys(model.attributes).reduce(
+    (acc: Record<string, any>, key) => {
+      const attr = model.attributes[key];
+      acc[key] =
+        attr.type === "relation"
+          ? { ...attr, targetAttribute: attr.inversedBy || attr.mappedBy || null }
+          : attr;
+      return acc;
+    },
+    {}
+  );
+
+  return {
+    schema: {
+      draftAndPublish: model.options?.draftAndPublish ?? false,
+      displayName: model.info.displayName,
+      singularName: model.info.singularName,
+      pluralName: model.info.pluralName,
+      description: model.info.description,
+      pluginOptions: model.pluginOptions,
+      kind: model.kind ?? "collectionType",
+      attributes,
+    },
+  };
+}
+
 function buildStrapiMock({
   components = {},
   contentTypes = {},
@@ -15,6 +53,7 @@ function buildStrapiMock({
 } = {}) {
   const createComponent = vi.fn().mockResolvedValue(undefined);
   const editContentType = vi.fn().mockResolvedValue(undefined);
+  const formatContentTypeSpy = vi.fn((model: any) => formatContentType(model));
 
   const strapi = {
     components,
@@ -25,14 +64,16 @@ function buildStrapiMock({
       return {
         service: (serviceName: string) => {
           if (serviceName === "components") return { createComponent };
-          if (serviceName === "content-types") return { editContentType };
+          if (serviceName === "content-types") {
+            return { editContentType, formatContentType: formatContentTypeSpy };
+          }
           throw new Error(`unexpected service ${serviceName}`);
         },
       };
     }),
   };
 
-  return { strapi, createComponent, editContentType };
+  return { strapi, createComponent, editContentType, formatContentTypeSpy };
 }
 
 const articleModel = () => ({
@@ -42,6 +83,12 @@ const articleModel = () => ({
   pluginOptions: {},
   attributes: {
     title: { type: "string", required: true },
+    author: {
+      type: "relation",
+      relation: "manyToOne",
+      target: "api::author.author",
+      inversedBy: "articles",
+    },
     seo: { type: "component", component: "shared.seo", repeatable: false },
   },
 });
@@ -165,6 +212,33 @@ describe("schema-setup", () => {
       component: SEO_UID,
       repeatable: false,
       pluginOptions: { i18n: { localized: true } },
+    });
+  });
+
+  it("regression: preserves a relation's inverse link (via targetAttribute) instead of tearing it down", async () => {
+    // Reproduces the real-world crash: submitting a relation attribute
+    // without `targetAttribute` set makes editContentType's diff treat it
+    // as changed, unset the inverse relation on the target content-type,
+    // and then fail to re-set it (since it also reads targetAttribute) —
+    // silently dropping author.articles. This asserts the payload actually
+    // sent to editContentType carries targetAttribute, sourced from
+    // formatContentType() rather than the raw live-loaded attribute shape.
+    const { strapi, editContentType, formatContentTypeSpy } = buildStrapiMock({
+      components: { [OPEN_GRAPH_UID]: {}, [SEO_UID]: {} },
+      contentTypes: { [ARTICLE_UID]: articleModel() },
+    });
+
+    await schemaSetup({ strapi: strapi as any }).run();
+
+    expect(formatContentTypeSpy).toHaveBeenCalledWith(strapi.contentTypes[ARTICLE_UID]);
+
+    const [, payload] = editContentType.mock.calls[0];
+    expect(payload.contentType.attributes.author).toEqual({
+      type: "relation",
+      relation: "manyToOne",
+      target: "api::author.author",
+      inversedBy: "articles",
+      targetAttribute: "articles",
     });
   });
 
