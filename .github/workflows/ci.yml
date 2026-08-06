@@ -109,6 +109,10 @@ jobs:
         run: npm run build
       - name: Boot server (server entry must load)
         working-directory: /tmp/smoke-app
+        env:
+          # create-strapi writes DATABASE_FILENAME= (empty) to .env, which
+          # defeats the config default and makes sqlite try to open a directory.
+          DATABASE_FILENAME: .tmp/data.db
         run: |
           mkdir -p .tmp
           npm run start &
@@ -119,4 +123,7 @@ jobs:
             exit 1
           fi
           echo "Server is healthy"
+          test -f src/components/sitetune/seo.json
+          test -f src/components/sitetune/open-graph.json
+          echo "SiteTune components were created on the host"
           kill "$SERVER_PID" 2>/dev/null || true
