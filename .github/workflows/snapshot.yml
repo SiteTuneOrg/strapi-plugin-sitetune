@@ -44,6 +44,9 @@ jobs:
             exit 1
           fi
 
+      # npm allows a single trusted publisher per package and it is bound to
+      # release.yml, so snapshots need a token: create a short-lived granular
+      # token on npmjs.com and add it as the NPM_TOKEN repo secret when needed.
       - name: Publish snapshot to npm
         run: yarn build && yarn changeset publish --tag ${{ inputs.tag }} --no-git-tag
         env:
