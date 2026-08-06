@@ -110,6 +110,7 @@ jobs:
       - name: Boot server (server entry must load)
         working-directory: /tmp/smoke-app
         run: |
+          mkdir -p .tmp
           npm run start &
           SERVER_PID=$!
           if ! timeout 90 bash -c 'until curl -sf -o /dev/null http://127.0.0.1:1337/_health; do sleep 2; done'; then
