@@ -1,0 +1,51 @@
+name: Snapshot release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'npm dist-tag (ex.: snapshot, beta, canary) — nunca "latest"'
+        required: true
+        default: snapshot
+
+permissions:
+  contents: read
+  id-token: write # provenance
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: yarn
+          registry-url: https://registry.npmjs.org
+      - run: yarn install --frozen-lockfile
+
+      - name: Refuse to hijack the latest tag
+        if: inputs.tag == 'latest'
+        run: |
+          echo "::error::dist-tag 'latest' is reserved for stable releases via release.yml"
+          exit 1
+
+      - name: Version snapshot
+        run: yarn changeset version --snapshot ${{ inputs.tag }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Ensure a snapshot version was produced
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version: $VERSION"
+          if [[ "$VERSION" != *"-${{ inputs.tag }}-"* ]]; then
+            echo "::error::No pending changesets on this branch — run 'yarn changeset' and commit before publishing a snapshot"
+            exit 1
+          fi
+
+      - name: Publish snapshot to npm
+        run: yarn build && yarn changeset publish --tag ${{ inputs.tag }} --no-git-tag
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_PROVENANCE: 'true'
