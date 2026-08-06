@@ -1,0 +1,31 @@
+{
+  "category": "sitetune",
+  "displayName": "Open Graph",
+  "icon": "earth",
+  "attributes": {
+    "ogTitle": {
+      "type": "string",
+      "pluginOptions": { "i18n": { "localized": true } }
+    },
+    "ogDescription": {
+      "type": "text",
+      "pluginOptions": { "i18n": { "localized": true } }
+    },
+    "ogImage": {
+      "type": "media",
+      "multiple": false,
+      "allowedTypes": ["images"],
+      "pluginOptions": { "i18n": { "localized": true } }
+    },
+    "ogUrl": {
+      "type": "string",
+      "pluginOptions": { "i18n": { "localized": true } }
+    },
+    "ogType": {
+      "type": "enumeration",
+      "enum": ["website", "article", "profile", "book"],
+      "default": "website",
+      "pluginOptions": { "i18n": { "localized": true } }
+    }
+  }
+}
