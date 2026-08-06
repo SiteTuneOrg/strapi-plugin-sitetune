@@ -19,25 +19,94 @@ interface ComponentSchemaSource {
 const getContentTypeBuilder = (strapi: Core.Strapi) =>
   strapi.plugin("content-type-builder");
 
-async function ensureComponent(
+const toComponentInput = (schema: ComponentSchemaSource) => ({
+  category: schema.category,
+  icon: schema.icon,
+  displayName: schema.displayName,
+  attributes: schema.attributes,
+});
+
+async function createComponent(
   strapi: Core.Strapi,
-  uid: string,
   schema: ComponentSchemaSource
-): Promise<boolean> {
-  if (strapi.components[uid]) {
-    return false;
-  }
+): Promise<void> {
+  await getContentTypeBuilder(strapi)
+    .service("components")
+    .createComponent({ component: toComponentInput(schema) });
+}
+
+/**
+ * Creates sitetune.open-graph and sitetune.seo together.
+ *
+ * The Content-Type Builder's `strapi.components` registry only refreshes on
+ * a full reload — it isn't updated by a `createComponent()` call within the
+ * same boot. Creating open-graph and seo as two separate sequential calls
+ * (seo referencing open-graph by its final UID) fails with
+ * `component.notFound` on the second call, because the schema-builder used
+ * internally re-seeds itself from the still-stale `strapi.components` on
+ * every call and has no way to see what the first call just wrote to disk.
+ *
+ * The Content-Type Builder API supports exactly this "create two
+ * interdependent components in one shot" case via a temporary UID: the
+ * dependency (open-graph) is passed in `components` with a `tmpUID`, and the
+ * primary component's (seo) attribute references that `tmpUID` instead of
+ * the real one. Both get resolved and written together by the same
+ * schema-builder instance, so no live-registry lookup is needed.
+ */
+async function createDependentComponents(
+  strapi: Core.Strapi,
+  openGraphSchema: ComponentSchemaSource,
+  seoSchema: ComponentSchemaSource
+): Promise<void> {
+  const OPEN_GRAPH_TMP_UID = "__tmp_sitetune_open_graph__";
 
   await getContentTypeBuilder(strapi)
     .service("components")
     .createComponent({
       component: {
-        category: schema.category,
-        icon: schema.icon,
-        displayName: schema.displayName,
-        attributes: schema.attributes,
+        ...toComponentInput(seoSchema),
+        attributes: {
+          ...seoSchema.attributes,
+          openGraph: {
+            type: "component",
+            component: OPEN_GRAPH_TMP_UID,
+            repeatable: false,
+            pluginOptions: { i18n: { localized: true } },
+          },
+        },
       },
+      components: [
+        { tmpUID: OPEN_GRAPH_TMP_UID, ...toComponentInput(openGraphSchema) },
+      ],
     });
+}
+
+async function ensureComponents(
+  strapi: Core.Strapi,
+  openGraphSchema: ComponentSchemaSource,
+  seoSchema: ComponentSchemaSource
+): Promise<boolean> {
+  const openGraphExists = Boolean(strapi.components[OPEN_GRAPH_UID]);
+  const seoExists = Boolean(strapi.components[SEO_UID]);
+
+  if (openGraphExists && seoExists) {
+    return false;
+  }
+
+  if (!openGraphExists && !seoExists) {
+    await createDependentComponents(strapi, openGraphSchema, seoSchema);
+    return true;
+  }
+
+  // Partial state (e.g. a previous run created one and then crashed before
+  // the other) — recover by creating just the missing one now that the
+  // other is confirmed present in the live registry.
+  if (!openGraphExists) {
+    await createComponent(strapi, openGraphSchema);
+  }
+  if (!seoExists) {
+    await createComponent(strapi, seoSchema);
+  }
 
   return true;
 }
@@ -93,21 +162,11 @@ async function ensureSeoField(
  */
 const schemaSetup = ({ strapi }: { strapi: Core.Strapi }) => ({
   async run(): Promise<{ schemaChanged: boolean }> {
-    let schemaChanged = false;
-
-    // sitetune.open-graph must exist before sitetune.seo, which nests it.
-    schemaChanged =
-      (await ensureComponent(
-        strapi,
-        OPEN_GRAPH_UID,
-        openGraphSchema as ComponentSchemaSource
-      )) || schemaChanged;
-    schemaChanged =
-      (await ensureComponent(
-        strapi,
-        SEO_UID,
-        seoSchema as ComponentSchemaSource
-      )) || schemaChanged;
+    let schemaChanged = await ensureComponents(
+      strapi,
+      openGraphSchema as ComponentSchemaSource,
+      seoSchema as ComponentSchemaSource
+    );
 
     for (const { uid } of TARGET_CONTENT_TYPES) {
       schemaChanged = (await ensureSeoField(strapi, uid)) || schemaChanged;

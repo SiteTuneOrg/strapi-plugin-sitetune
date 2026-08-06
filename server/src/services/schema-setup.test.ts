@@ -72,7 +72,13 @@ describe("schema-setup", () => {
     expect(editContentType).not.toHaveBeenCalled();
   });
 
-  it("creates open-graph before seo when both components are missing", async () => {
+  it("creates open-graph and seo together in a single batched call when both are missing", async () => {
+    // Two separate createComponent() calls in the same boot would fail:
+    // strapi.components only refreshes on a full reload, so a second call
+    // referencing what the first call just created (by its final UID)
+    // throws component.notFound against the still-stale live registry.
+    // Regression test for that — see createDependentComponents in
+    // schema-setup.ts.
     const { strapi, createComponent } = buildStrapiMock({
       components: {},
       contentTypes: { [ARTICLE_UID]: articleModel() },
@@ -80,12 +86,37 @@ describe("schema-setup", () => {
 
     await schemaSetup({ strapi: strapi as any }).run();
 
-    expect(createComponent).toHaveBeenCalledTimes(2);
-    const [firstCall, secondCall] = createComponent.mock.calls;
-    expect(firstCall[0].component.displayName).toBe("Open Graph");
-    expect(firstCall[0].component.category).toBe("sitetune");
-    expect(secondCall[0].component.displayName).toBe("SEO");
-    expect(secondCall[0].component.attributes.openGraph.component).toBe(OPEN_GRAPH_UID);
+    expect(createComponent).toHaveBeenCalledTimes(1);
+    const [payload] = createComponent.mock.calls[0];
+    expect(payload.component.displayName).toBe("SEO");
+    expect(payload.component.category).toBe("sitetune");
+
+    // The primary component's nested reference must NOT be the real
+    // sitetune.open-graph UID (that would hit the same notFound bug) — it
+    // must point at the tmpUID of the dependency shipped alongside it.
+    const openGraphRef = payload.component.attributes.openGraph.component;
+    expect(openGraphRef).not.toBe(OPEN_GRAPH_UID);
+
+    expect(payload.components).toHaveLength(1);
+    expect(payload.components[0].tmpUID).toBe(openGraphRef);
+    expect(payload.components[0].displayName).toBe("Open Graph");
+    expect(payload.components[0].category).toBe("sitetune");
+  });
+
+  it("recovers a partial state (e.g. a previous crashed run) with plain single-component calls", async () => {
+    const { strapi, createComponent } = buildStrapiMock({
+      components: { [OPEN_GRAPH_UID]: {} }, // open-graph already on disk from a prior run
+      contentTypes: { [ARTICLE_UID]: articleModel() },
+    });
+
+    await schemaSetup({ strapi: strapi as any }).run();
+
+    expect(createComponent).toHaveBeenCalledTimes(1);
+    const [payload] = createComponent.mock.calls[0];
+    expect(payload.component.displayName).toBe("SEO");
+    expect(payload.components).toBeUndefined();
+    // Now that open-graph is confirmed live, seo can reference its real UID directly.
+    expect(payload.component.attributes.openGraph.component).toBe(OPEN_GRAPH_UID);
   });
 
   it("does not mark metaTitle/metaDescription as required, so a partially-filled backfill never blocks a save", async () => {
