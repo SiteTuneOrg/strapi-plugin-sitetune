@@ -20,7 +20,7 @@
       "pluginOptions": { "i18n": { "localized": true } }
     },
     "email": {
-      "type": "string"
+      "type": "email"
     },
     "linkedinUrl": {
       "type": "string"
