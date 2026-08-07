@@ -87,6 +87,23 @@ describe('redirect-validation', () => {
     ).resolves.toBeUndefined();
   });
 
+  it('rejects a write that leads into a pre-existing cycle unrelated to its own "from", with an accurate message', async () => {
+    // /x -> /y -> /z -> /x is a cycle that exists independently of this
+    // write (only reachable via data written outside validateRedirectWrite,
+    // e.g. a direct DB edit) — /q -> /x never loops back to /q itself, but
+    // still leads any consumer of /q into an infinite loop, so it must still
+    // be rejected. The message shouldn't claim /q reappears, since it never does.
+    const rows: FixtureRow[] = [
+      { documentId: 'd1', from: '/x', to: '/y' },
+      { documentId: 'd2', from: '/y', to: '/z' },
+      { documentId: 'd3', from: '/z', to: '/x' },
+    ];
+
+    await expect(service(rows).validateRedirectWrite({ from: '/q', to: '/x' })).rejects.toThrow(
+      'Redirect chain starting at "/q" leads into an existing infinite loop at "/x".'
+    );
+  });
+
   it('re-validates an update against the merged new state, not just the changed field', async () => {
     // d1: /a -> /b (unrelated), d2: /c -> /a (points at d1's current "from").
     // Updating d1 so its "to" becomes /c only creates a cycle because of this update.

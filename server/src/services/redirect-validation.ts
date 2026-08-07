@@ -74,9 +74,19 @@ async function assertNoCycle(
 
   while (graph.has(current)) {
     if (visited.has(current)) {
-      throw new ValidationError(
-        `Circular redirect: "${from}" eventually loops back through "${current}".`
-      );
+      // In the common case this loop closes back on `from` itself — the
+      // write being validated is what completes the cycle. It's possible
+      // (only via data written outside this validation path, e.g. a direct
+      // DB edit, or the documented concurrent-write race below) for `to` to
+      // instead lead into a pre-existing cycle that never comes back around
+      // to `from` at all — still a real infinite loop anyone following this
+      // redirect would hit, so still rejected, but "from loops back through
+      // X" would be actively wrong when X isn't from. Word it accordingly.
+      const message =
+        current === from
+          ? `Circular redirect: "${from}" eventually loops back through "${current}".`
+          : `Redirect chain starting at "${from}" leads into an existing infinite loop at "${current}".`;
+      throw new ValidationError(message);
     }
 
     if (hops >= MAX_CHAIN_HOPS) {
