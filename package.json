@@ -49,8 +49,7 @@
   },
   "homepage": "https://github.com/SiteTuneOrg/strapi-plugin-sitetune#readme",
   "publishConfig": {
-    "access": "public",
-    "provenance": true
+    "access": "public"
   },
   "dependencies": {},
   "devDependencies": {
