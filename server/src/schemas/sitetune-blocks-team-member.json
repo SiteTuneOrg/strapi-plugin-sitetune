@@ -1,0 +1,35 @@
+{
+  "category": "sitetune-blocks",
+  "displayName": "Team Member",
+  "icon": "user",
+  "attributes": {
+    "name": {
+      "type": "string"
+    },
+    "role": {
+      "type": "string",
+      "pluginOptions": { "i18n": { "localized": true } }
+    },
+    "photo": {
+      "type": "media",
+      "multiple": false,
+      "allowedTypes": ["images"]
+    },
+    "bio": {
+      "type": "text",
+      "pluginOptions": { "i18n": { "localized": true } }
+    },
+    "email": {
+      "type": "email"
+    },
+    "linkedinUrl": {
+      "type": "string"
+    },
+    "twitterUrl": {
+      "type": "string"
+    },
+    "instagramUrl": {
+      "type": "string"
+    }
+  }
+}

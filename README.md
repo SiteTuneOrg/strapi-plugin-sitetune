@@ -6,14 +6,15 @@ Self-contained Strapi plugin for SEO, social sharing, redirects, and sitemap —
 
 ## Status
 
-**Pillars A and C implemented.** Pillar A is scoped down (see [Pillar A design notes](#pillar-a-design-notes) — unverified against a live host beyond component creation, see [Testing against a host](#testing-against-a-host)). Pillar C is implemented and verified end-to-end against a real, disposable Strapi 5 app — CRUD, validation, the content-API endpoint, and CSV import all confirmed working (see [Pillar C design notes](#pillar-c-design-notes)); only the admin-panel React UI itself hasn't been driven through an actual browser yet. Pillars B and D are still spec-only. See [`docs/SPEC-001-sitetune-plugin.md`](docs/SPEC-001-sitetune-plugin.md) for the full design, including the decision log, the marketplace survey of existing SEO/sitemap/redirect plugins that led here, and open items to resolve before implementation starts.
+**Pillars A, C, and E implemented.** Pillar A is scoped down (see [Pillar A design notes](#pillar-a-design-notes) — unverified against a live host beyond component creation, see [Testing against a host](#testing-against-a-host)). Pillar C is implemented and verified end-to-end against a real, disposable Strapi 5 app — CRUD, validation, the content-API endpoint, and CSV import all confirmed working (see [Pillar C design notes](#pillar-c-design-notes)); only the admin-panel React UI itself hasn't been driven through an actual browser yet. Pillar E is scoped down the same way Pillar A is — component creation verified against a real host, including second-boot idempotency in production mode (see [Pillar E design notes](#pillar-e-design-notes)). Pillars B and D are still spec-only. See [`docs/SPEC-001-sitetune-plugin.md`](docs/SPEC-001-sitetune-plugin.md) (Pillars A–D) and [`docs/SPEC-002-sitetune-content-blocks.md`](docs/SPEC-002-sitetune-content-blocks.md) (Pillar E) for the full design, including decision logs and open items.
 
-## The four pillars
+## The five pillars
 
 - **A. SEO + Social Sharing base** — `sitetune.seo` + nested `sitetune.open-graph` components, i18n-ready. The plugin creates these components on the host; attaching `sitetune.seo` to a content-type (article, global, or any other) is a manual step via the admin panel's Content-Type Builder — see [Pillar A design notes](#pillar-a-design-notes) for why.
 - **B. OG Image Editor** — per-entry, template-based PNG generation (Satori + resvg) from inside the Strapi admin panel, writing into whatever field a site has manually attached `sitetune.seo` to. Not yet implemented.
 - **C. Redirect Manager** — `plugin::sitetune.redirect` collection type (CRUD via the standard Content Manager UI, plus CSV import) for 301/302 redirects, exposed via a token-gated content-API endpoint for any frontend to enforce. See [Pillar C design notes](#pillar-c-design-notes).
 - **D. Sitemap + robots.txt** — self-generated XML sitemap with hreflang/alternate-language links, plus a matching `robots.txt`.
+- **E. Content Blocks** — `sitetune-blocks.testimonial` / `.team-member` / `.faq-item` / `.cta`, reusable across SiteTune sites regardless of vertical (SEO tooling, real estate, tech consulting, personal training, …). Same manual-attach convention as Pillar A. See [Pillar E design notes](#pillar-e-design-notes).
 
 Pillars C and D ship "dark" until an adopting site's frontend integrates their output — see the spec for why, and why that's a deliberate scope cut rather than an oversight.
 
@@ -58,6 +59,12 @@ To use `sitetune.seo` on a content-type: after linking the plugin (below), open 
 
 This is in addition to, not instead of, the CI `smoke` job (which only confirms the plugin boots, not that any of the above actually behaves correctly) and the unit tests (`server/src/services/redirect-validation.test.ts`, `redirect-write-guard.test.ts`, `redirect-import.test.ts`, `server/src/utils/csv.test.ts`). Not yet verified: the actual admin-panel _UI_ (React forms, the CSV import page) — everything above was driven directly against the HTTP API, not through a browser. See [Testing against a host](#testing-against-a-host) to try that.
 
+## Pillar E design notes
+
+Same runtime-creation mechanism as Pillar A (same `bootstrap()`/`schema-setup.ts`, same "no automated edits to an existing content-type" rule) applied to four content blocks meant to be reused across any SiteTune site, not just SEO-specific ones: `sitetune-blocks.testimonial`, `.team-member`, `.faq-item`, `.cta`. They live under their own category (`sitetune-blocks`) so the Content-Type Builder UI doesn't mix them with SEO/Open-Graph.
+
+Unlike `sitetune.seo`/`sitetune.open-graph`, none of the four nest inside one another, so there's no `tmpUID`/batched-creation step — each is checked and created independently. Attaching one of these to a content-type or a page's dynamic zone is a manual step via the admin panel, same as Pillar A. See [`docs/SPEC-002-sitetune-content-blocks.md`](docs/SPEC-002-sitetune-content-blocks.md) for the full field list, the rest of the brainstormed content-types deferred for later, and why Components (not standalone Content-Types) was the right shape here.
+
 ## Testing against a host
 
 To try this against [`strapi-sitetune`](https://github.com/SiteTuneOrg) or any other Strapi 5 project:
@@ -74,9 +81,11 @@ npx yalc add --link strapi-plugin-sitetune
 
 No `config/plugins.ts` entry needed — installed this way the plugin is a real `node_modules` dependency, and Strapi auto-discovers any dependency whose `package.json` has `strapi.kind === "plugin"` (confirmed in `packages/core/strapi/src/node/core/plugins.ts`'s `getEnabledPlugins`).
 
-Run `yarn develop` in the host. On first boot the plugin creates its components and reloads; the components then exist as of the next boot. Commit the generated `src/components/sitetune/*.json` files in the host repo once you've confirmed they look right.
+Run `yarn develop` in the host. On first boot the plugin creates its components and reloads; the components then exist as of the next boot. Commit the generated `src/components/sitetune/*.json` and `src/components/sitetune-blocks/*.json` files in the host repo once you've confirmed they look right.
 
-**Verified against a real host**: component creation (including the batched two-component creation and the `strapi.reload()` trigger) has been confirmed working against `strapi-sitetune`. The bug described above (relation corruption via `editContentType`) was also confirmed there before this scope cut removed that code path entirely.
+**In production (`strapi build` + `strapi start`), commit the generated component files before your next deploy.** Strapi's component loader reads only from the _built_ `dist/src/components`, not the live `src/components` — so a production boot that creates a component writes it to `src/components`, but a **second** production boot (without an intervening `strapi build`) still finds the registry empty and silently recreates it (overwriting the same file, not erroring). It only becomes a true no-op once a `strapi build` in between has copied the new files into `dist`. This is exactly why committing the generated files matters, not just a cleanliness suggestion — the next deploy's build step is what makes the following boot idempotent.
+
+**Verified against a real host**: component creation (including the batched two-component creation for Pillar A and the independent, non-batched creation for Pillar E's four blocks, plus the `strapi.reload()` trigger) has been confirmed working against `strapi-sitetune`. The bug described above (relation corruption via `editContentType`) was also confirmed there before this scope cut removed that code path entirely. Second-boot idempotency (production mode) was verified separately via a disposable `create-strapi` app — see [`docs/SPEC-002-sitetune-content-blocks.md`](docs/SPEC-002-sitetune-content-blocks.md) revision log item 9 for the full finding.
 
 ## Target stack
 
