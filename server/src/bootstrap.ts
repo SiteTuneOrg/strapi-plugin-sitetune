@@ -1,4 +1,4 @@
-import type { Core } from "@strapi/strapi";
+import type { Core } from '@strapi/strapi';
 
 /**
  * Ensures the sitetune.seo / sitetune.open-graph components exist on the
@@ -19,14 +19,11 @@ import type { Core } from "@strapi/strapi";
  * boot (no watcher/parent process to catch the signal).
  */
 const bootstrap = async ({ strapi }: { strapi: Core.Strapi }) => {
-  const { schemaChanged } = await strapi
-    .plugin("sitetune")
-    .service("schema-setup")
-    .run();
+  const { schemaChanged } = await strapi.plugin('sitetune').service('schema-setup').run();
 
   if (schemaChanged) {
     strapi.log.info(
-      "[sitetune] SEO/Open Graph components created on the host — reloading to load them."
+      '[sitetune] SEO/Open Graph components created on the host — reloading to load them.'
     );
     setImmediate(() => strapi.reload());
   }
