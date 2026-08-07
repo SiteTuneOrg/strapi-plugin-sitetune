@@ -1,11 +1,11 @@
-import type { Core } from "@strapi/strapi";
+import type { Core } from '@strapi/strapi';
 
-import openGraphSchema from "../schemas/sitetune-open-graph.json";
-import seoSchema from "../schemas/sitetune-seo.json";
-import testimonialSchema from "../schemas/sitetune-blocks-testimonial.json";
-import teamMemberSchema from "../schemas/sitetune-blocks-team-member.json";
-import faqItemSchema from "../schemas/sitetune-blocks-faq-item.json";
-import ctaSchema from "../schemas/sitetune-blocks-cta.json";
+import openGraphSchema from '../schemas/sitetune-open-graph.json';
+import seoSchema from '../schemas/sitetune-seo.json';
+import testimonialSchema from '../schemas/sitetune-blocks-testimonial.json';
+import teamMemberSchema from '../schemas/sitetune-blocks-team-member.json';
+import faqItemSchema from '../schemas/sitetune-blocks-faq-item.json';
+import ctaSchema from '../schemas/sitetune-blocks-cta.json';
 import {
   OPEN_GRAPH_UID,
   SEO_UID,
@@ -13,7 +13,7 @@ import {
   TEAM_MEMBER_UID,
   FAQ_ITEM_UID,
   CTA_UID,
-} from "../constants";
+} from '../constants';
 
 interface ComponentSchemaSource {
   category: string;
@@ -22,8 +22,7 @@ interface ComponentSchemaSource {
   attributes: Record<string, unknown>;
 }
 
-const getContentTypeBuilder = (strapi: Core.Strapi) =>
-  strapi.plugin("content-type-builder");
+const getContentTypeBuilder = (strapi: Core.Strapi) => strapi.plugin('content-type-builder');
 
 const toComponentInput = (schema: ComponentSchemaSource) => ({
   category: schema.category,
@@ -32,12 +31,9 @@ const toComponentInput = (schema: ComponentSchemaSource) => ({
   attributes: schema.attributes,
 });
 
-async function createComponent(
-  strapi: Core.Strapi,
-  schema: ComponentSchemaSource
-): Promise<void> {
+async function createComponent(strapi: Core.Strapi, schema: ComponentSchemaSource): Promise<void> {
   await getContentTypeBuilder(strapi)
-    .service("components")
+    .service('components')
     .createComponent({ component: toComponentInput(schema) });
 }
 
@@ -64,26 +60,24 @@ async function createDependentComponents(
   openGraphSchema: ComponentSchemaSource,
   seoSchema: ComponentSchemaSource
 ): Promise<void> {
-  const OPEN_GRAPH_TMP_UID = "__tmp_sitetune_open_graph__";
+  const OPEN_GRAPH_TMP_UID = '__tmp_sitetune_open_graph__';
 
   await getContentTypeBuilder(strapi)
-    .service("components")
+    .service('components')
     .createComponent({
       component: {
         ...toComponentInput(seoSchema),
         attributes: {
           ...seoSchema.attributes,
           openGraph: {
-            type: "component",
+            type: 'component',
             component: OPEN_GRAPH_TMP_UID,
             repeatable: false,
             pluginOptions: { i18n: { localized: true } },
           },
         },
       },
-      components: [
-        { tmpUID: OPEN_GRAPH_TMP_UID, ...toComponentInput(openGraphSchema) },
-      ],
+      components: [{ tmpUID: OPEN_GRAPH_TMP_UID, ...toComponentInput(openGraphSchema) }],
     });
 }
 
@@ -172,11 +166,11 @@ const schemaSetup = ({ strapi }: { strapi: Core.Strapi }) => ({
   isReady(): boolean {
     return Boolean(
       strapi.components[OPEN_GRAPH_UID] &&
-        strapi.components[SEO_UID] &&
-        strapi.components[TESTIMONIAL_UID] &&
-        strapi.components[TEAM_MEMBER_UID] &&
-        strapi.components[FAQ_ITEM_UID] &&
-        strapi.components[CTA_UID]
+      strapi.components[SEO_UID] &&
+      strapi.components[TESTIMONIAL_UID] &&
+      strapi.components[TEAM_MEMBER_UID] &&
+      strapi.components[FAQ_ITEM_UID] &&
+      strapi.components[CTA_UID]
     );
   },
 });

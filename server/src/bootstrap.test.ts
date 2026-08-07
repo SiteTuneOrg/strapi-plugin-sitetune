@@ -1,6 +1,6 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from 'vitest';
 
-import bootstrap from "./bootstrap";
+import bootstrap from './bootstrap';
 
 function buildStrapiMock(schemaChanged: boolean) {
   const schemaSetupRun = vi.fn().mockResolvedValue({ schemaChanged });
@@ -10,10 +10,10 @@ function buildStrapiMock(schemaChanged: boolean) {
     reload,
     log: { info: vi.fn(), warn: vi.fn() },
     plugin: vi.fn((name: string) => {
-      if (name !== "sitetune") throw new Error(`unexpected plugin ${name}`);
+      if (name !== 'sitetune') throw new Error(`unexpected plugin ${name}`);
       return {
         service: (serviceName: string) => {
-          if (serviceName === "schema-setup") return { run: schemaSetupRun };
+          if (serviceName === 'schema-setup') return { run: schemaSetupRun };
           throw new Error(`unexpected service ${serviceName}`);
         },
       };
@@ -23,10 +23,10 @@ function buildStrapiMock(schemaChanged: boolean) {
   return { strapi, schemaSetupRun, reload };
 }
 
-describe("bootstrap", () => {
-  it("triggers strapi.reload() when schema-setup created components", async () => {
+describe('bootstrap', () => {
+  it('triggers strapi.reload() when schema-setup created components', async () => {
     const { strapi, reload } = buildStrapiMock(true);
-    const setImmediateSpy = vi.spyOn(global, "setImmediate");
+    const setImmediateSpy = vi.spyOn(global, 'setImmediate');
 
     await bootstrap({ strapi: strapi as any });
 
@@ -41,7 +41,7 @@ describe("bootstrap", () => {
     setImmediateSpy.mockRestore();
   });
 
-  it("does not reload when nothing changed", async () => {
+  it('does not reload when nothing changed', async () => {
     const { strapi, reload } = buildStrapiMock(false);
 
     await bootstrap({ strapi: strapi as any });

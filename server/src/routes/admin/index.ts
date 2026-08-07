@@ -1,4 +1,4 @@
 export default () => ({
-  type: "admin",
+  type: 'admin',
   routes: [],
 });

@@ -1,1 +1,1 @@
-export const PLUGIN_ID = "sitetune";
+export const PLUGIN_ID = 'sitetune';

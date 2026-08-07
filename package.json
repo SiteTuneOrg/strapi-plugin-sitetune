@@ -1,5 +1,5 @@
 {
-  "version": "0.0.0",
+  "version": "0.1.0",
   "keywords": [],
   "type": "commonjs",
   "exports": {
@@ -19,7 +19,9 @@
       "default": "./dist/server/index.js"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "strapi-plugin build",
     "watch": "strapi-plugin watch",
@@ -27,36 +29,62 @@
     "verify": "strapi-plugin verify",
     "test:ts:front": "tsc -p admin/tsconfig.json",
     "test:ts:back": "tsc -p server/tsconfig.json --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "release": "yarn build && changeset publish",
+    "prepublishOnly": "strapi-plugin verify"
+  },
+  "engines": {
+    "node": ">=20 <=26"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SiteTuneOrg/strapi-plugin-sitetune.git"
+  },
+  "bugs": {
+    "url": "https://github.com/SiteTuneOrg/strapi-plugin-sitetune/issues"
+  },
+  "homepage": "https://github.com/SiteTuneOrg/strapi-plugin-sitetune#readme",
+  "publishConfig": {
+    "access": "public"
   },
   "dependencies": {},
   "devDependencies": {
-    "@strapi/strapi": "^5.51.2",
-    "@strapi/sdk-plugin": "^6.1.1",
-    "prettier": "^3.9.6",
-    "vitest": "^3.2.4",
+    "@changesets/changelog-github": "^0.7.0",
+    "@changesets/cli": "^2.31.1",
+    "@eslint/js": "^10.0.1",
     "@strapi/design-system": "^2.2.3",
     "@strapi/icons": "^2.2.3",
-    "react-intl": "^6.8.9",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "react-router-dom": "^6.30.4",
-    "styled-components": "^6.5.0",
+    "@strapi/sdk-plugin": "^6.1.1",
+    "@strapi/strapi": "^5.51.2",
+    "@strapi/typescript-utils": "^5.51.2",
     "@types/react": "^18.3.31",
     "@types/react-dom": "^18.3.7",
-    "@strapi/typescript-utils": "^5.51.2",
-    "typescript": "^5.9.3"
-  },
-  "peerDependencies": {
-    "@strapi/strapi": "^5.51.2",
-    "@strapi/sdk-plugin": "^6.1.1",
-    "@strapi/design-system": "^2.2.3",
-    "@strapi/icons": "^2.2.3",
-    "react-intl": "^6.8.9",
+    "eslint": "^10.8.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "prettier": "^3.9.6",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "react-intl": "^6.8.9",
     "react-router-dom": "^6.30.4",
-    "styled-components": "^6.5.0"
+    "styled-components": "^6.5.0",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.66.0",
+    "vitest": "^3.2.4"
+  },
+  "peerDependencies": {
+    "@strapi/design-system": "^2.0.0",
+    "@strapi/icons": "^2.0.0",
+    "@strapi/strapi": "^5.0.0",
+    "react": "^17.0.0 || ^18.0.0",
+    "react-dom": "^17.0.0 || ^18.0.0",
+    "react-intl": "^6.6.0",
+    "react-router-dom": "^6.0.0",
+    "styled-components": "^6.0.0"
   },
   "strapi": {
     "kind": "plugin",
