@@ -2,7 +2,19 @@ import type { Core } from '@strapi/strapi';
 
 import openGraphSchema from '../schemas/sitetune-open-graph.json';
 import seoSchema from '../schemas/sitetune-seo.json';
-import { OPEN_GRAPH_UID, SEO_UID } from '../constants';
+import testimonialSchema from '../schemas/sitetune-blocks-testimonial.json';
+import teamMemberSchema from '../schemas/sitetune-blocks-team-member.json';
+import faqItemSchema from '../schemas/sitetune-blocks-faq-item.json';
+import ctaSchema from '../schemas/sitetune-blocks-cta.json';
+import {
+  OPEN_GRAPH_UID,
+  SEO_UID,
+  TESTIMONIAL_UID,
+  TEAM_MEMBER_UID,
+  FAQ_ITEM_UID,
+  CTA_UID,
+  ALL_UIDS,
+} from '../constants';
 
 interface ComponentSchemaSource {
   category: string;
@@ -101,29 +113,59 @@ async function ensureComponents(
 }
 
 /**
- * Idempotent: only creates the sitetune.seo / sitetune.open-graph
- * components if they don't already exist on the host. Deliberately does
- * NOT touch any existing content-type (article, global, or otherwise) —
- * attaching sitetune.seo to a content-type is a manual step via the admin
- * panel's Content-Type Builder, left to whoever adopts the plugin. See
- * README's "Pillar A design notes" for why: editing an existing
- * content-type's attributes programmatically (to add a field referencing
- * these components) risks corrupting unrelated relations on that
- * content-type, confirmed against a real host.
+ * Pillar E's content blocks — unlike sitetune.seo/open-graph, none of these
+ * nest inside one another, so each can be checked/created independently:
+ * no tmpUID batching needed, since no attribute here ever references
+ * another component's not-yet-live UID.
+ */
+const INDEPENDENT_COMPONENTS: Array<{ uid: string; schema: ComponentSchemaSource }> = [
+  { uid: TESTIMONIAL_UID, schema: testimonialSchema as ComponentSchemaSource },
+  { uid: TEAM_MEMBER_UID, schema: teamMemberSchema as ComponentSchemaSource },
+  { uid: FAQ_ITEM_UID, schema: faqItemSchema as ComponentSchemaSource },
+  { uid: CTA_UID, schema: ctaSchema as ComponentSchemaSource },
+];
+
+async function ensureIndependentComponents(strapi: Core.Strapi): Promise<boolean> {
+  let changed = false;
+
+  for (const { uid, schema } of INDEPENDENT_COMPONENTS) {
+    if (!strapi.components[uid]) {
+      await createComponent(strapi, schema);
+      changed = true;
+    }
+  }
+
+  return changed;
+}
+
+/**
+ * Idempotent: only creates the sitetune.seo / sitetune.open-graph /
+ * content-block components if they don't already exist on the host.
+ * Deliberately does NOT touch any existing content-type (article, global,
+ * or otherwise) — attaching any of these components to a content-type is a
+ * manual step via the admin panel's Content-Type Builder, left to whoever
+ * adopts the plugin. See README's "Pillar A design notes" for why: editing
+ * an existing content-type's attributes programmatically (to add a field
+ * referencing these components) risks corrupting unrelated relations on
+ * that content-type, confirmed against a real host.
  */
 const schemaSetup = ({ strapi }: { strapi: Core.Strapi }) => ({
   async run(): Promise<{ schemaChanged: boolean }> {
-    const schemaChanged = await ensureComponents(
+    // SEO/OG first, then the independent blocks — order doesn't affect
+    // correctness (neither set references the other), kept stable so
+    // callers relying on call order (e.g. tests) aren't surprised.
+    const seoChanged = await ensureComponents(
       strapi,
       openGraphSchema as ComponentSchemaSource,
       seoSchema as ComponentSchemaSource
     );
+    const blocksChanged = await ensureIndependentComponents(strapi);
 
-    return { schemaChanged };
+    return { schemaChanged: seoChanged || blocksChanged };
   },
 
   isReady(): boolean {
-    return Boolean(strapi.components[OPEN_GRAPH_UID] && strapi.components[SEO_UID]);
+    return ALL_UIDS.every((uid) => Boolean(strapi.components[uid]));
   },
 });
 

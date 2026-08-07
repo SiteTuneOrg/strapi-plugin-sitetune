@@ -1,0 +1,18 @@
+{
+  "category": "sitetune-blocks",
+  "displayName": "FAQ Item",
+  "icon": "question",
+  "attributes": {
+    "question": {
+      "type": "string",
+      "pluginOptions": { "i18n": { "localized": true } }
+    },
+    "answer": {
+      "type": "richtext",
+      "pluginOptions": { "i18n": { "localized": true } }
+    },
+    "category": {
+      "type": "string"
+    }
+  }
+}

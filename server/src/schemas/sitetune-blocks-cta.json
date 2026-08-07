@@ -1,0 +1,29 @@
+{
+  "category": "sitetune-blocks",
+  "displayName": "CTA",
+  "icon": "cursor",
+  "attributes": {
+    "title": {
+      "type": "string",
+      "pluginOptions": { "i18n": { "localized": true } }
+    },
+    "description": {
+      "type": "text",
+      "pluginOptions": { "i18n": { "localized": true } }
+    },
+    "buttonLabel": {
+      "type": "string",
+      "pluginOptions": { "i18n": { "localized": true } }
+    },
+    "buttonUrl": {
+      "type": "string",
+      "pluginOptions": { "i18n": { "localized": true } }
+    },
+    "backgroundImage": {
+      "type": "media",
+      "multiple": false,
+      "allowedTypes": ["images"],
+      "pluginOptions": { "i18n": { "localized": true } }
+    }
+  }
+}
