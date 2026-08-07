@@ -3572,7 +3572,7 @@
     yup "0.32.9"
     zod "3.25.76"
 
-"@strapi/utils@5.51.2":
+"@strapi/utils@5.51.2", "@strapi/utils@^5.51.2":
   version "5.51.2"
   resolved "https://registry.npmjs.org/@strapi/utils/-/utils-5.51.2.tgz#cc2a7f577fdc45e16a82059ee1935863d0cd2f1e"
   integrity sha512-huBmL5QeMCWA3Zgqbjffl/DTDYh20DrhdlxdhjBQf61l8qQQSquaFlOELxyFfNtx1DCtuUB6xN6AAcr+2cUN5g==
