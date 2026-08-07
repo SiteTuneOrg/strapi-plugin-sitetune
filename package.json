@@ -70,7 +70,7 @@
     "prettier": "^3.9.6",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-intl": "^6.8.9",
+    "react-intl": "^10.1.20",
     "react-router-dom": "^6.30.4",
     "styled-components": "^6.5.0",
     "typescript": "^5.9.3",
