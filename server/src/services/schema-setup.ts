@@ -13,6 +13,7 @@ import {
   TEAM_MEMBER_UID,
   FAQ_ITEM_UID,
   CTA_UID,
+  ALL_UIDS,
 } from '../constants';
 
 interface ComponentSchemaSource {
@@ -164,14 +165,7 @@ const schemaSetup = ({ strapi }: { strapi: Core.Strapi }) => ({
   },
 
   isReady(): boolean {
-    return Boolean(
-      strapi.components[OPEN_GRAPH_UID] &&
-      strapi.components[SEO_UID] &&
-      strapi.components[TESTIMONIAL_UID] &&
-      strapi.components[TEAM_MEMBER_UID] &&
-      strapi.components[FAQ_ITEM_UID] &&
-      strapi.components[CTA_UID]
-    );
+    return ALL_UIDS.every((uid) => Boolean(strapi.components[uid]));
   },
 });
 

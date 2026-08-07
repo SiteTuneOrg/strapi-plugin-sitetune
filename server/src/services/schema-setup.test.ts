@@ -8,9 +8,8 @@ import {
   TEAM_MEMBER_UID,
   FAQ_ITEM_UID,
   CTA_UID,
+  ALL_UIDS,
 } from '../constants';
-
-const ALL_UIDS = [OPEN_GRAPH_UID, SEO_UID, TESTIMONIAL_UID, TEAM_MEMBER_UID, FAQ_ITEM_UID, CTA_UID];
 
 function buildAllComponents(): Record<string, unknown> {
   return Object.fromEntries(ALL_UIDS.map((uid) => [uid, {}]));

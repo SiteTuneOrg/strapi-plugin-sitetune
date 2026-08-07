@@ -20,7 +20,9 @@
       "pluginOptions": { "i18n": { "localized": true } }
     },
     "rating": {
-      "type": "integer"
+      "type": "integer",
+      "min": 1,
+      "max": 5
     },
     "source": {
       "type": "enumeration",
