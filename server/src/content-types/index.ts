@@ -1,3 +1,3 @@
-import redirect from "./redirect";
+import redirect from './redirect';
 
 export default { redirect };

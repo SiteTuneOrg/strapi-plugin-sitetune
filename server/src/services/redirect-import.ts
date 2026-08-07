@@ -1,7 +1,7 @@
-import type { Core } from "@strapi/strapi";
+import type { Core } from '@strapi/strapi';
 
-import { parseCsv } from "../utils/csv";
-import { REDIRECT_UID } from "../constants";
+import { parseCsv } from '../utils/csv';
+import { REDIRECT_UID } from '../constants';
 
 interface RowError {
   row: number;
@@ -37,10 +37,10 @@ export function createRedirectImportService({ strapi }: { strapi: Core.Strapi })
       const [header, ...dataRows] = rows;
       const columns = header.map((column) => column.trim());
 
-      if (!columns.includes("from") || !columns.includes("to")) {
+      if (!columns.includes('from') || !columns.includes('to')) {
         errors.push({
           row: 1,
-          from: "",
+          from: '',
           message: 'CSV header must include "from" and "to" columns.',
         });
         return { successCount, errors };
@@ -56,21 +56,21 @@ export function createRedirectImportService({ strapi }: { strapi: Core.Strapi })
           return columnIndex === -1 ? undefined : row[columnIndex]?.trim();
         };
 
-        const from = get("from");
-        const to = get("to");
+        const from = get('from');
+        const to = get('to');
 
         if (!from || !to) {
           errors.push({
             row: rowNumber,
-            from: from ?? "",
+            from: from ?? '',
             message: 'Each row needs both "from" and "to".',
           });
           continue;
         }
 
-        const statusCode = get("statusCode") === "302" ? "302" : "301";
-        const enabledRaw = get("enabled");
-        const enabled = enabledRaw === undefined ? true : enabledRaw.toLowerCase() !== "false";
+        const statusCode = get('statusCode') === '302' ? '302' : '301';
+        const enabledRaw = get('enabled');
+        const enabled = enabledRaw === undefined ? true : enabledRaw.toLowerCase() !== 'false';
 
         try {
           await strapi.documents(REDIRECT_UID).create({
@@ -81,7 +81,7 @@ export function createRedirectImportService({ strapi }: { strapi: Core.Strapi })
           errors.push({
             row: rowNumber,
             from,
-            message: error instanceof Error ? error.message : "Unknown error.",
+            message: error instanceof Error ? error.message : 'Unknown error.',
           });
         }
       }

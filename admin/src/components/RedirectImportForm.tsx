@@ -1,7 +1,19 @@
-import * as React from "react";
+import * as React from 'react';
 
-import { Box, Button, Field, Flex, Table, Tbody, Td, Th, Thead, Tr, Typography } from "@strapi/design-system";
-import { useFetchClient } from "@strapi/strapi/admin";
+import {
+  Box,
+  Button,
+  Field,
+  Flex,
+  Table,
+  Tbody,
+  Td,
+  Th,
+  Thead,
+  Tr,
+  Typography,
+} from '@strapi/design-system';
+import { useFetchClient } from '@strapi/strapi/admin';
 
 interface RowError {
   row: number;
@@ -31,16 +43,13 @@ const RedirectImportForm = () => {
 
     try {
       const formData = new FormData();
-      formData.append("files", file);
+      formData.append('files', file);
 
-      const { data } = await post<{ data: ImportReport }>(
-        "/sitetune/redirects/import",
-        formData
-      );
+      const { data } = await post<{ data: ImportReport }>('/sitetune/redirects/import', formData);
 
       setReport(data.data);
     } catch (error) {
-      setSubmitError(error instanceof Error ? error.message : "Import failed.");
+      setSubmitError(error instanceof Error ? error.message : 'Import failed.');
     } finally {
       setIsSubmitting(false);
     }
@@ -72,17 +81,15 @@ const RedirectImportForm = () => {
         </Flex>
       </Box>
 
-      {submitError && (
-        <Typography textColor="danger600">{submitError}</Typography>
-      )}
+      {submitError && <Typography textColor="danger600">{submitError}</Typography>}
 
       {report && (
         <Flex direction="column" alignItems="stretch" gap={4}>
           <Typography>
-            {report.successCount} redirect{report.successCount === 1 ? "" : "s"} imported
+            {report.successCount} redirect{report.successCount === 1 ? '' : 's'} imported
             successfully.
             {report.errors.length > 0 &&
-              ` ${report.errors.length} row${report.errors.length === 1 ? "" : "s"} failed.`}
+              ` ${report.errors.length} row${report.errors.length === 1 ? '' : 's'} failed.`}
           </Typography>
 
           {report.errors.length > 0 && (
@@ -107,7 +114,7 @@ const RedirectImportForm = () => {
                       <Typography>{rowError.row}</Typography>
                     </Td>
                     <Td>
-                      <Typography>{rowError.from || "—"}</Typography>
+                      <Typography>{rowError.from || '—'}</Typography>
                     </Td>
                     <Td>
                       <Typography>{rowError.message}</Typography>

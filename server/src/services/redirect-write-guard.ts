@@ -1,6 +1,6 @@
-import type { Core, Modules } from "@strapi/strapi";
+import type { Core, Modules } from '@strapi/strapi';
 
-import { REDIRECT_UID } from "../constants";
+import { REDIRECT_UID } from '../constants';
 
 /**
  * Content Manager's admin CRUD never calls a plugin's own controller — its
@@ -15,23 +15,25 @@ import { REDIRECT_UID } from "../constants";
  * plugin's own content-API routes, and the CSV importer alike — so
  * duplicate/cycle validation is registered here instead of in a controller.
  */
-export function createRedirectWriteGuard(strapi: Core.Strapi): Modules.Documents.Middleware.Middleware {
+export function createRedirectWriteGuard(
+  strapi: Core.Strapi
+): Modules.Documents.Middleware.Middleware {
   return async (ctx, next) => {
-    if (ctx.uid !== REDIRECT_UID || (ctx.action !== "create" && ctx.action !== "update")) {
+    if (ctx.uid !== REDIRECT_UID || (ctx.action !== 'create' && ctx.action !== 'update')) {
       return next();
     }
 
     const params = ctx.params as { data?: { from?: string; to?: string }; documentId?: string };
     const incoming = params.data ?? {};
-    const documentId = ctx.action === "update" ? params.documentId : undefined;
+    const documentId = ctx.action === 'update' ? params.documentId : undefined;
 
     let from = incoming.from;
     let to = incoming.to;
 
-    if (ctx.action === "update" && (from === undefined || to === undefined)) {
+    if (ctx.action === 'update' && (from === undefined || to === undefined)) {
       const existing = (await strapi.documents(REDIRECT_UID).findOne({
         documentId,
-        fields: ["from", "to"],
+        fields: ['from', 'to'],
       })) as unknown as { from: string; to: string } | null;
 
       from = from ?? existing?.from;
@@ -40,8 +42,8 @@ export function createRedirectWriteGuard(strapi: Core.Strapi): Modules.Documents
 
     if (from !== undefined && to !== undefined) {
       await strapi
-        .plugin("sitetune")
-        .service("redirect-validation")
+        .plugin('sitetune')
+        .service('redirect-validation')
         .validateRedirectWrite({ documentId, from, to });
     }
 

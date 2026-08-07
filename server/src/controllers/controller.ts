@@ -1,11 +1,11 @@
-import type { Core } from "@strapi/strapi";
+import type { Core } from '@strapi/strapi';
 
 const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
   index(ctx) {
     ctx.body = strapi
-      .plugin("sitetune")
+      .plugin('sitetune')
       // the name of the service file & the method.
-      .service("service")
+      .service('service')
       .getWelcomeMessage();
   },
 });

@@ -11,14 +11,14 @@
 export function parseCsv(input: string): string[][] {
   const rows: string[][] = [];
   let row: string[] = [];
-  let field = "";
+  let field = '';
   let inQuotes = false;
   let i = 0;
   const len = input.length;
 
   const pushField = () => {
     row.push(field);
-    field = "";
+    field = '';
   };
   const pushRow = () => {
     pushField();
@@ -50,16 +50,16 @@ export function parseCsv(input: string): string[][] {
       i += 1;
       continue;
     }
-    if (char === ",") {
+    if (char === ',') {
       pushField();
       i += 1;
       continue;
     }
-    if (char === "\r") {
+    if (char === '\r') {
       i += 1;
       continue;
     }
-    if (char === "\n") {
+    if (char === '\n') {
       pushRow();
       i += 1;
       continue;
@@ -72,5 +72,5 @@ export function parseCsv(input: string): string[][] {
     pushRow();
   }
 
-  return rows.filter((parsedRow) => !(parsedRow.length === 1 && parsedRow[0] === ""));
+  return rows.filter((parsedRow) => !(parsedRow.length === 1 && parsedRow[0] === ''));
 }

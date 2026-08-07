@@ -1,7 +1,7 @@
-import type { Core } from "@strapi/strapi";
-import { errors } from "@strapi/utils";
+import type { Core } from '@strapi/strapi';
+import { errors } from '@strapi/utils';
 
-import { REDIRECT_UID } from "../constants";
+import { REDIRECT_UID } from '../constants';
 
 const { ValidationError } = errors;
 
@@ -23,7 +23,7 @@ const normalize = (value: string): string => value.trim();
 
 function assertNotSelfLoop(from: string, to: string): void {
   if (from === to) {
-    throw new ValidationError("A redirect's \"from\" and \"to\" must differ.");
+    throw new ValidationError('A redirect\'s "from" and "to" must differ.');
   }
 }
 
@@ -34,7 +34,7 @@ async function assertNoDuplicateFrom(
 ): Promise<void> {
   const matches = (await strapi.documents(REDIRECT_UID).findMany({
     filters: { from },
-    fields: ["documentId"],
+    fields: ['documentId'],
   })) as Array<{ documentId: string }>;
 
   const hasConflict = matches.some((match) => match.documentId !== documentId);
@@ -51,7 +51,7 @@ async function assertNoCycle(
   to: string
 ): Promise<void> {
   const existing = (await strapi.documents(REDIRECT_UID).findMany({
-    fields: ["documentId", "from", "to"],
+    fields: ['documentId', 'from', 'to'],
   })) as unknown as RedirectRow[];
 
   const graph = new Map<string, string>();

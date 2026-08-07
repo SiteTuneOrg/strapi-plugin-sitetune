@@ -1,6 +1,6 @@
-import redirectImportRoute from "./redirect-import";
+import redirectImportRoute from './redirect-import';
 
 export default () => ({
-  type: "admin",
+  type: 'admin',
   routes: [redirectImportRoute],
 });

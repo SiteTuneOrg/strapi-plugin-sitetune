@@ -1,7 +1,7 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from 'vitest';
 
-import { createRedirectWriteGuard } from "./redirect-write-guard";
-import { REDIRECT_UID } from "../constants";
+import { createRedirectWriteGuard } from './redirect-write-guard';
+import { REDIRECT_UID } from '../constants';
 
 function buildStrapiMock(existing?: { from: string; to: string } | null) {
   const validateRedirectWrite = vi.fn().mockResolvedValue(undefined);
@@ -14,10 +14,10 @@ function buildStrapiMock(existing?: { from: string; to: string } | null) {
   const strapi = {
     documents,
     plugin: vi.fn((name: string) => {
-      if (name !== "sitetune") throw new Error(`unexpected plugin ${name}`);
+      if (name !== 'sitetune') throw new Error(`unexpected plugin ${name}`);
       return {
         service: (serviceName: string) => {
-          if (serviceName !== "redirect-validation") {
+          if (serviceName !== 'redirect-validation') {
             throw new Error(`unexpected service ${serviceName}`);
           }
           return { validateRedirectWrite };
@@ -29,103 +29,117 @@ function buildStrapiMock(existing?: { from: string; to: string } | null) {
   return { strapi, validateRedirectWrite, findOne, documents };
 }
 
-describe("redirect-write-guard", () => {
-  it("passes through untouched for a different content-type", async () => {
+describe('redirect-write-guard', () => {
+  it('passes through untouched for a different content-type', async () => {
     const { strapi, documents } = buildStrapiMock();
     const guard = createRedirectWriteGuard(strapi as any);
-    const next = vi.fn().mockResolvedValue("next-result");
+    const next = vi.fn().mockResolvedValue('next-result');
 
     const result = await guard(
-      { uid: "plugin::sitetune.other", action: "create", params: { data: { from: "/a", to: "/b" } } } as any,
+      {
+        uid: 'plugin::sitetune.other',
+        action: 'create',
+        params: { data: { from: '/a', to: '/b' } },
+      } as any,
       next
     );
 
-    expect(result).toBe("next-result");
+    expect(result).toBe('next-result');
     expect(next).toHaveBeenCalledTimes(1);
     expect(documents).not.toHaveBeenCalled();
   });
 
-  it("passes through untouched for a non-write action on this content-type", async () => {
+  it('passes through untouched for a non-write action on this content-type', async () => {
     const { strapi, documents } = buildStrapiMock();
     const guard = createRedirectWriteGuard(strapi as any);
-    const next = vi.fn().mockResolvedValue("next-result");
+    const next = vi.fn().mockResolvedValue('next-result');
 
-    await guard({ uid: REDIRECT_UID, action: "findMany", params: {} } as any, next);
+    await guard({ uid: REDIRECT_UID, action: 'findMany', params: {} } as any, next);
 
     expect(next).toHaveBeenCalledTimes(1);
     expect(documents).not.toHaveBeenCalled();
   });
 
-  it("validates a create call using the data as-is", async () => {
+  it('validates a create call using the data as-is', async () => {
     const { strapi, validateRedirectWrite } = buildStrapiMock();
     const guard = createRedirectWriteGuard(strapi as any);
-    const next = vi.fn().mockResolvedValue("created");
+    const next = vi.fn().mockResolvedValue('created');
 
     const result = await guard(
-      { uid: REDIRECT_UID, action: "create", params: { data: { from: "/old", to: "/new" } } } as any,
+      {
+        uid: REDIRECT_UID,
+        action: 'create',
+        params: { data: { from: '/old', to: '/new' } },
+      } as any,
       next
     );
 
     expect(validateRedirectWrite).toHaveBeenCalledWith({
       documentId: undefined,
-      from: "/old",
-      to: "/new",
+      from: '/old',
+      to: '/new',
     });
     expect(next).toHaveBeenCalledTimes(1);
-    expect(result).toBe("created");
+    expect(result).toBe('created');
   });
 
-  it("merges a partial update (only unrelated fields sent) with the existing document before validating", async () => {
-    const { strapi, validateRedirectWrite, findOne } = buildStrapiMock({ from: "/old", to: "/new" });
+  it('merges a partial update (only unrelated fields sent) with the existing document before validating', async () => {
+    const { strapi, validateRedirectWrite, findOne } = buildStrapiMock({
+      from: '/old',
+      to: '/new',
+    });
     const guard = createRedirectWriteGuard(strapi as any);
-    const next = vi.fn().mockResolvedValue("updated");
+    const next = vi.fn().mockResolvedValue('updated');
 
     await guard(
       {
         uid: REDIRECT_UID,
-        action: "update",
-        params: { documentId: "d1", data: { enabled: false } },
+        action: 'update',
+        params: { documentId: 'd1', data: { enabled: false } },
       } as any,
       next
     );
 
-    expect(findOne).toHaveBeenCalledWith({ documentId: "d1", fields: ["from", "to"] });
+    expect(findOne).toHaveBeenCalledWith({ documentId: 'd1', fields: ['from', 'to'] });
     expect(validateRedirectWrite).toHaveBeenCalledWith({
-      documentId: "d1",
-      from: "/old",
-      to: "/new",
+      documentId: 'd1',
+      from: '/old',
+      to: '/new',
     });
     expect(next).toHaveBeenCalledTimes(1);
   });
 
-  it("does not fetch the existing document when the update already carries both from and to", async () => {
-    const { strapi, validateRedirectWrite, findOne } = buildStrapiMock({ from: "/stale", to: "/stale-too" });
+  it('does not fetch the existing document when the update already carries both from and to', async () => {
+    const { strapi, validateRedirectWrite, findOne } = buildStrapiMock({
+      from: '/stale',
+      to: '/stale-too',
+    });
     const guard = createRedirectWriteGuard(strapi as any);
-    const next = vi.fn().mockResolvedValue("updated");
+    const next = vi.fn().mockResolvedValue('updated');
 
     await guard(
       {
         uid: REDIRECT_UID,
-        action: "update",
-        params: { documentId: "d1", data: { from: "/a", to: "/b" } },
+        action: 'update',
+        params: { documentId: 'd1', data: { from: '/a', to: '/b' } },
       } as any,
       next
     );
 
     expect(findOne).not.toHaveBeenCalled();
-    expect(validateRedirectWrite).toHaveBeenCalledWith({ documentId: "d1", from: "/a", to: "/b" });
+    expect(validateRedirectWrite).toHaveBeenCalledWith({ documentId: 'd1', from: '/a', to: '/b' });
   });
 
-  it("skips validation (and never calls next-blocking work) when the update targets a nonexistent document", async () => {
+  it('skips validation (and never calls next-blocking work) when the update targets a nonexistent document', async () => {
     const { strapi, validateRedirectWrite, findOne } = buildStrapiMock(null);
     const guard = createRedirectWriteGuard(strapi as any);
-    const next = vi.fn().mockResolvedValue("noop");
+    const next = vi.fn().mockResolvedValue('noop');
 
     const result = await guard(
       {
         uid: REDIRECT_UID,
-        action: "update",
-        params: { documentId: "missing", data: { enabled: true } },
+        action: 'update',
+        params: { documentId: 'missing', data: { enabled: true } },
       } as any,
       next
     );
@@ -133,21 +147,21 @@ describe("redirect-write-guard", () => {
     expect(findOne).toHaveBeenCalled();
     expect(validateRedirectWrite).not.toHaveBeenCalled();
     expect(next).toHaveBeenCalledTimes(1);
-    expect(result).toBe("noop");
+    expect(result).toBe('noop');
   });
 
-  it("propagates a validation rejection and never calls next", async () => {
+  it('propagates a validation rejection and never calls next', async () => {
     const { strapi, validateRedirectWrite } = buildStrapiMock();
-    validateRedirectWrite.mockRejectedValue(new Error("circular redirect"));
+    validateRedirectWrite.mockRejectedValue(new Error('circular redirect'));
     const guard = createRedirectWriteGuard(strapi as any);
-    const next = vi.fn().mockResolvedValue("should-not-happen");
+    const next = vi.fn().mockResolvedValue('should-not-happen');
 
     await expect(
       guard(
-        { uid: REDIRECT_UID, action: "create", params: { data: { from: "/a", to: "/b" } } } as any,
+        { uid: REDIRECT_UID, action: 'create', params: { data: { from: '/a', to: '/b' } } } as any,
         next
       )
-    ).rejects.toThrow("circular redirect");
+    ).rejects.toThrow('circular redirect');
 
     expect(next).not.toHaveBeenCalled();
   });

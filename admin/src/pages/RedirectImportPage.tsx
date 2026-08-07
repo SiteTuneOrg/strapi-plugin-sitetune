@@ -1,6 +1,6 @@
-import { Box, Main, Typography } from "@strapi/design-system";
+import { Box, Main, Typography } from '@strapi/design-system';
 
-import { RedirectImportForm } from "../components/RedirectImportForm";
+import { RedirectImportForm } from '../components/RedirectImportForm';
 
 const RedirectImportPage = () => {
   return (
