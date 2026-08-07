@@ -87,7 +87,7 @@ Category: `sitetune-blocks` (kept separate from `sitetune`, which stays SEO/Open
 Extends `schema-setup.ts` rather than adding a parallel service — it was already "ensure this schema exists on the host," and the four new components are more of that, not a different concern.
 
 - `server/src/schemas/sitetune-blocks-{testimonial,team-member,faq-item,cta}.json` — same `{ category, displayName, icon, attributes }` shape as `sitetune-seo.json`.
-- `server/src/constants.ts` — `TESTIMONIAL_UID`, `TEAM_MEMBER_UID`, `FAQ_ITEM_UID`, `CTA_UID`, plus `ALL_UIDS` (all six UIDs, one array) as the single source of truth `isReady()` and the tests both read from — see revision log item 11.
+- `server/src/constants.ts` — `TESTIMONIAL_UID`, `TEAM_MEMBER_UID`, `FAQ_ITEM_UID`, `CTA_UID`, plus `ALL_UIDS` (all six UIDs, one array) as the single source of truth `isReady()` and the tests both read from — see revision log item 12.
 - `server/src/services/schema-setup.ts` — `ensureIndependentComponents()`: loops the four `{ uid, schema }` pairs, checks `strapi.components[uid]`, calls the already-generic `createComponent()` for whichever are missing. No `tmpUID` batching (unlike `createDependentComponents` for SEO/OG) since none of the four reference each other. `run()` combines this with the existing SEO/OG path (`schemaChanged = seoChanged || blocksChanged`); `isReady()` now checks `ALL_UIDS.every(...)`.
 - `server/src/bootstrap.ts` — log message generalized from "SEO/Open Graph components created" to "components created," reload trigger unchanged.
 
