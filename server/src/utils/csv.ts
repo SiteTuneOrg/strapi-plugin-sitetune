@@ -8,7 +8,11 @@
  * Blank lines (no fields, or a single empty field) are dropped, matching
  * common CSV parser behavior for stray newlines between rows.
  */
-export function parseCsv(input: string): string[][] {
+export function parseCsv(rawInput: string): string[][] {
+  // Excel's "CSV UTF-8" export prepends a byte-order-mark; left in place it
+  // silently attaches itself to the first header cell (e.g. "\uFEFFfrom"),
+  // which then fails to match "from" anywhere downstream.
+  const input = rawInput.replace(/^\uFEFF/, '');
   const rows: string[][] = [];
   let row: string[] = [];
   let field = '';

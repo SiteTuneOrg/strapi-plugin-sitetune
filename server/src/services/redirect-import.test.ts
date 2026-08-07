@@ -108,4 +108,76 @@ describe('redirect-import', () => {
     ]);
     expect(create).not.toHaveBeenCalled();
   });
+
+  it('matches header columns case-insensitively (Excel-style "From,To")', async () => {
+    const { strapi, create } = buildStrapiMock();
+    const service = createRedirectImportService({ strapi });
+
+    const report = await service.importFromCsv('From,To\n/old,/new\n');
+
+    expect(report).toEqual({ successCount: 1, errors: [] });
+    expect(create).toHaveBeenCalledWith({
+      data: { from: '/old', to: '/new', statusCode: 301, enabled: true },
+    });
+  });
+
+  it('rejects a row with an invalid statusCode instead of silently defaulting to 301', async () => {
+    const { strapi, create } = buildStrapiMock();
+    const service = createRedirectImportService({ strapi });
+
+    const csv = ['from,to,statusCode', '/old,/new,404'].join('\n');
+
+    const report = await service.importFromCsv(csv);
+
+    expect(report.successCount).toBe(0);
+    expect(report.errors).toEqual([
+      {
+        row: 2,
+        from: '/old',
+        message: 'statusCode must be one of 301, 302 (got "404").',
+      },
+    ]);
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  it('rejects a row with a non-numeric statusCode (e.g. a typo)', async () => {
+    const { strapi, create } = buildStrapiMock();
+    const service = createRedirectImportService({ strapi });
+
+    const report = await service.importFromCsv('from,to,statusCode\n/old,/new,30l\n');
+
+    expect(report.successCount).toBe(0);
+    expect(report.errors[0].message).toContain('statusCode must be one of 301, 302');
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  it('rejects a row with an unrecognized enabled value instead of silently defaulting to true', async () => {
+    const { strapi, create } = buildStrapiMock();
+    const service = createRedirectImportService({ strapi });
+
+    const csv = ['from,to,enabled', '/old,/new,disabled'].join('\n');
+
+    const report = await service.importFromCsv(csv);
+
+    expect(report.successCount).toBe(0);
+    expect(report.errors).toEqual([
+      {
+        row: 2,
+        from: '/old',
+        message: 'enabled must be "true" or "false" (got "disabled").',
+      },
+    ]);
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  it('accepts enabled case-insensitively', async () => {
+    const { strapi, create } = buildStrapiMock();
+    const service = createRedirectImportService({ strapi });
+
+    await service.importFromCsv('from,to,enabled\n/old,/new,FALSE\n');
+
+    expect(create).toHaveBeenCalledWith({
+      data: { from: '/old', to: '/new', statusCode: 301, enabled: false },
+    });
+  });
 });

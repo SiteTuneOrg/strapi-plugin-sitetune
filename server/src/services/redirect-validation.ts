@@ -6,7 +6,7 @@ import { REDIRECT_UID } from '../constants';
 const { ValidationError } = errors;
 
 const MAX_CHAIN_HOPS = 500;
-const VALID_STATUS_CODES = [301, 302];
+export const VALID_STATUS_CODES = [301, 302];
 
 export function assertValidStatusCode(statusCode: number): void {
   if (!VALID_STATUS_CODES.includes(statusCode)) {

@@ -1,4 +1,4 @@
-import { readFile } from 'node:fs/promises';
+import { readFile, unlink } from 'node:fs/promises';
 
 import type { Core } from '@strapi/strapi';
 import { errors } from '@strapi/utils';
@@ -17,14 +17,22 @@ const redirectImport = ({ strapi }: { strapi: Core.Strapi }) => ({
       throw new ValidationError('Upload exactly one CSV file under the "files" field.');
     }
 
-    const csvText = await readFile(uploaded.filepath, 'utf-8');
+    // koa-body's underlying multipart parser (formidable) writes uploads to
+    // the OS temp dir and does NOT delete them once the request completes —
+    // that cleanup is left to the application. Wrapped in try/finally so a
+    // parse/import failure still cleans up rather than leaking the file.
+    try {
+      const csvText = await readFile(uploaded.filepath, 'utf-8');
 
-    const report = await strapi
-      .plugin('sitetune')
-      .service('redirect-import')
-      .importFromCsv(csvText);
+      const report = await strapi
+        .plugin('sitetune')
+        .service('redirect-import')
+        .importFromCsv(csvText);
 
-    ctx.body = { data: report };
+      ctx.body = { data: report };
+    } finally {
+      await unlink(uploaded.filepath).catch(() => {});
+    }
   },
 });
 

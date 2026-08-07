@@ -56,4 +56,11 @@ describe('parseCsv', () => {
       ['/c', '/d'],
     ]);
   });
+
+  it('strips a leading UTF-8 byte-order-mark (Excel "CSV UTF-8" export)', () => {
+    expect(parseCsv('\uFEFFfrom,to\n/a,/b\n')).toEqual([
+      ['from', 'to'],
+      ['/a', '/b'],
+    ]);
+  });
 });

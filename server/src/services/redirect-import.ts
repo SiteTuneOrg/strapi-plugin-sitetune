@@ -2,6 +2,7 @@ import type { Core } from '@strapi/strapi';
 
 import { parseCsv } from '../utils/csv';
 import { REDIRECT_UID } from '../constants';
+import { VALID_STATUS_CODES } from './redirect-validation';
 
 interface RowError {
   row: number;
@@ -35,7 +36,9 @@ export function createRedirectImportService({ strapi }: { strapi: Core.Strapi })
       }
 
       const [header, ...dataRows] = rows;
-      const columns = header.map((column) => column.trim());
+      // Case-insensitive: an Excel-authored "From,To" header is at least as
+      // likely as a hand-typed "from,to" one.
+      const columns = header.map((column) => column.trim().toLowerCase());
 
       if (!columns.includes('from') || !columns.includes('to')) {
         errors.push({
@@ -68,9 +71,35 @@ export function createRedirectImportService({ strapi }: { strapi: Core.Strapi })
           continue;
         }
 
-        const statusCode = get('statusCode') === '302' ? 302 : 301;
+        const statusCodeRaw = get('statuscode');
+        let statusCode = 301;
+        if (statusCodeRaw) {
+          const parsed = Number(statusCodeRaw);
+          if (!(VALID_STATUS_CODES as number[]).includes(parsed)) {
+            errors.push({
+              row: rowNumber,
+              from,
+              message: `statusCode must be one of ${VALID_STATUS_CODES.join(', ')} (got "${statusCodeRaw}").`,
+            });
+            continue;
+          }
+          statusCode = parsed;
+        }
+
         const enabledRaw = get('enabled');
-        const enabled = enabledRaw === undefined ? true : enabledRaw.toLowerCase() !== 'false';
+        let enabled = true;
+        if (enabledRaw) {
+          const normalized = enabledRaw.toLowerCase();
+          if (normalized !== 'true' && normalized !== 'false') {
+            errors.push({
+              row: rowNumber,
+              from,
+              message: `enabled must be "true" or "false" (got "${enabledRaw}").`,
+            });
+            continue;
+          }
+          enabled = normalized === 'true';
+        }
 
         try {
           await strapi.documents(REDIRECT_UID).create({
