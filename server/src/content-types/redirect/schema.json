@@ -22,9 +22,8 @@
       "required": true
     },
     "statusCode": {
-      "type": "enumeration",
-      "enum": ["301", "302"],
-      "default": "301"
+      "type": "integer",
+      "default": 301
     },
     "enabled": {
       "type": "boolean",

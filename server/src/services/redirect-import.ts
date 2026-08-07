@@ -68,7 +68,7 @@ export function createRedirectImportService({ strapi }: { strapi: Core.Strapi })
           continue;
         }
 
-        const statusCode = get('statusCode') === '302' ? '302' : '301';
+        const statusCode = get('statusCode') === '302' ? 302 : 301;
         const enabledRaw = get('enabled');
         const enabled = enabledRaw === undefined ? true : enabledRaw.toLowerCase() !== 'false';
 

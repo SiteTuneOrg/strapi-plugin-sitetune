@@ -51,10 +51,10 @@ describe('redirect-import', () => {
     expect(report).toEqual({ successCount: 2, errors: [] });
     expect(create).toHaveBeenCalledTimes(2);
     expect(create).toHaveBeenNthCalledWith(1, {
-      data: { from: '/old1', to: '/new1', statusCode: '301', enabled: true },
+      data: { from: '/old1', to: '/new1', statusCode: 301, enabled: true },
     });
     expect(create).toHaveBeenNthCalledWith(2, {
-      data: { from: '/old2', to: '/new2', statusCode: '302', enabled: false },
+      data: { from: '/old2', to: '/new2', statusCode: 302, enabled: false },
     });
   });
 
@@ -65,7 +65,7 @@ describe('redirect-import', () => {
     await service.importFromCsv('from,to\n/old,/new\n');
 
     expect(create).toHaveBeenCalledWith({
-      data: { from: '/old', to: '/new', statusCode: '301', enabled: true },
+      data: { from: '/old', to: '/new', statusCode: 301, enabled: true },
     });
   });
 

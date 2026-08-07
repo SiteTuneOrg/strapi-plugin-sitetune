@@ -1,6 +1,7 @@
 import type { Core, Modules } from '@strapi/strapi';
 
 import { REDIRECT_UID } from '../constants';
+import { assertValidStatusCode } from './redirect-validation';
 
 /**
  * Content Manager's admin CRUD never calls a plugin's own controller — its
@@ -23,9 +24,16 @@ export function createRedirectWriteGuard(
       return next();
     }
 
-    const params = ctx.params as { data?: { from?: string; to?: string }; documentId?: string };
+    const params = ctx.params as {
+      data?: { from?: string; to?: string; statusCode?: number };
+      documentId?: string;
+    };
     const incoming = params.data ?? {};
     const documentId = ctx.action === 'update' ? params.documentId : undefined;
+
+    if (incoming.statusCode !== undefined) {
+      assertValidStatusCode(incoming.statusCode);
+    }
 
     let from = incoming.from;
     let to = incoming.to;

@@ -150,6 +150,48 @@ describe('redirect-write-guard', () => {
     expect(result).toBe('noop');
   });
 
+  it('rejects a create with an invalid statusCode before touching from/to validation', async () => {
+    const { strapi, validateRedirectWrite } = buildStrapiMock();
+    const guard = createRedirectWriteGuard(strapi as any);
+    const next = vi.fn().mockResolvedValue('should-not-happen');
+
+    await expect(
+      guard(
+        {
+          uid: REDIRECT_UID,
+          action: 'create',
+          params: { data: { from: '/a', to: '/b', statusCode: 200 } },
+        } as any,
+        next
+      )
+    ).rejects.toThrow(/statusCode must be one of/i);
+
+    expect(validateRedirectWrite).not.toHaveBeenCalled();
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it('allows a create with a valid statusCode', async () => {
+    const { strapi, validateRedirectWrite } = buildStrapiMock();
+    const guard = createRedirectWriteGuard(strapi as any);
+    const next = vi.fn().mockResolvedValue('created');
+
+    const result = await guard(
+      {
+        uid: REDIRECT_UID,
+        action: 'create',
+        params: { data: { from: '/a', to: '/b', statusCode: 302 } },
+      } as any,
+      next
+    );
+
+    expect(validateRedirectWrite).toHaveBeenCalledWith({
+      documentId: undefined,
+      from: '/a',
+      to: '/b',
+    });
+    expect(result).toBe('created');
+  });
+
   it('propagates a validation rejection and never calls next', async () => {
     const { strapi, validateRedirectWrite } = buildStrapiMock();
     validateRedirectWrite.mockRejectedValue(new Error('circular redirect'));

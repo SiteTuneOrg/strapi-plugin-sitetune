@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import redirectValidation from './redirect-validation';
+import redirectValidation, { assertValidStatusCode } from './redirect-validation';
 import { REDIRECT_UID } from '../constants';
 
 interface FixtureRow {
@@ -106,5 +106,17 @@ describe('redirect-validation', () => {
     await expect(
       service(rows).validateRedirectWrite({ documentId: 'd1', from: '/a', to: '/c' })
     ).resolves.toBeUndefined();
+  });
+});
+
+describe('assertValidStatusCode', () => {
+  it('accepts 301 and 302', () => {
+    expect(() => assertValidStatusCode(301)).not.toThrow();
+    expect(() => assertValidStatusCode(302)).not.toThrow();
+  });
+
+  it('rejects any other status code', () => {
+    expect(() => assertValidStatusCode(200)).toThrow(/statusCode must be one of/i);
+    expect(() => assertValidStatusCode(404)).toThrow(/statusCode must be one of/i);
   });
 });

@@ -7,7 +7,7 @@ const redirect = ({ strapi }: { strapi: Core.Strapi }) => ({
     const redirects = (await strapi.documents(REDIRECT_UID).findMany({
       filters: { enabled: true },
       fields: ['from', 'to', 'statusCode'],
-    })) as unknown as Array<{ from: string; to: string; statusCode: string }>;
+    })) as unknown as Array<{ from: string; to: string; statusCode: number }>;
 
     ctx.body = {
       data: redirects.map(({ from, to, statusCode }) => ({
