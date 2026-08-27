@@ -24,7 +24,7 @@ jobs:
       - run: npm install -g npm@latest
       - run: yarn install --frozen-lockfile
       - name: Create release PR or publish to npm
-        uses: changesets/action@v1
+        uses: changesets/action@v2
         with:
           version: yarn changeset version
           publish: yarn release
